@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  cfg = config.service.niqol;
+  cfg = config.services.niqol;
 in
 {
   options.services.niqol = {
