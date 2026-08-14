@@ -26,6 +26,9 @@
     packages.${system} = {
       default = niqol;
     };
+
+    homeManagerModules.default =
+      import ./niqol-module.nix;
   };
 }
 

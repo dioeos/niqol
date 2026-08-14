@@ -1,0 +1,32 @@
+{ config, lib, pkgs, ... }:
+
+let
+  cfg = config.service.niqol;
+in
+{
+  options.services.niqol = {
+    enable = lib.mkEnableOption "Niqol";
+
+    package = lib.mkOption {
+      type = lib.types.package;
+      description = "Package containing the niqol exectuable";
+    };
+  };
+
+  config = lib.mkIf cfg.enable {
+    systemd.user.services.niqol = {
+      Unit = {
+        Description = "Niqol daemon";
+      };
+
+      Service = {
+        ExecStart = "${cfg.package}/bin/niqol";
+        Restart = "on-failure";
+      };
+
+      Install = {
+        WantedBy = [ "default.target" ];
+      };
+    };
+  };
+}
