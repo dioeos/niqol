@@ -75,6 +75,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "niqol-actions"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "niri-ipc",
+ "serde_json",
+]
+
+[[package]]
 name = "niqol-daemon"
 version = "0.1.0"
 dependencies = [

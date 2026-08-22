@@ -73,9 +73,6 @@ impl NiriListener {
             Event::WindowFocusChanged { id: Some(id) } => {
                 writeln!(file, "Window focus changed: {}", id)?;
             }
-            Event::WindowFocusChanged { id: None } => {
-                writeln!(file, "No window is focused")?;
-            }
             _ => {
                 writeln!(file, "Handling some event")?;
             }
