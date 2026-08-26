@@ -23,7 +23,7 @@ impl ActionListener {
         }
     }
 
-    pub async fn run(&self) -> Result<(), anyhow::Error> {
+    pub async fn run(self) -> Result<(), anyhow::Error> {
         let action_socket = Self::create_action_socket()
             .context("Failed to initialize action socket")?;
 
@@ -40,7 +40,7 @@ impl ActionListener {
             .await
             .context("Failed to initialize niri connection")?;
 
-        let handler = ActionHandler::new(stream);
+        let mut handler = ActionHandler::new(stream, self.mark_store);
 
         loop {
             let (action_stream, _) = action_socket.accept().await?;

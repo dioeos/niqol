@@ -1,45 +1,96 @@
 use std::{fs::File, sync::Arc, io::Write};
 
-use anyhow::Context;
-use tokio::net::UnixStream;
+use anyhow::{Context, bail};
+use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, net::UnixStream};
 
-use crate::{actions::action::ActionRequest, niri::NiriConnector};
+use crate::{actions::action::ActionRequest, stores::MarkStore};
 
 
 
 pub struct ActionHandler {
-    niri_stream: UnixStream
+    niri_reader: BufReader<UnixStream>,
+    mark_store: Arc<MarkStore>
 }
 
 impl ActionHandler {
     pub fn new(
-        stream: UnixStream
+        niri_stream: UnixStream,
+        mark_store: Arc<MarkStore>
     ) -> Self {
         Self {
-            niri_stream: stream
+            niri_reader: BufReader::new(niri_stream),
+            mark_store
         }
     }
 
     pub async fn handle_action_request(
-        &self,
+        &mut self,
         action_request: ActionRequest,
         file: &mut File
     ) -> Result<(), anyhow::Error> {
+        let mut line = String::new();
+
         match action_request {
             ActionRequest::MarkWindow { slot } => {
                 writeln!(file, "Requested to mark window: {}", slot)?;
+
+                let reply = self
+                    .send_niri_request(&niri_ipc::Request::FocusedWindow, &mut line)
+                    .await?
+                    .map_err(anyhow::Error::msg)
+                    .context("Niri reject FocusedWindow request")?;
+
+                let niri_window = match reply {
+                    niri_ipc::Response::FocusedWindow(window) => window,
+                    other => bail!("Expected FocusedWindow response, received: {other:?}")
+                };
+
+                let focused_window: niri_ipc::Window = niri_window
+                    .context("Cannot mark window because no window is focused")?;
+
+                // self.mark_store.map.insert(slot, focused_window.id);
             }
         }
         Ok(())
     }
 
-    // async fn get_current_focused_window(&self) -> Result<niri_ipc::Window, anyhow::Error> {
-    //     // let stream: UnixStream = self
-    //     //     .niri_connector
-    //     //     .connect()
-    //     //     .await
-    //     //     .context("Failed to initialize niri connection")?;
-    //     //
-    //     // let mut reader:
-    // }
+    async fn send_niri_request(
+        &mut self,
+        request: &niri_ipc::Request,
+        buf: &mut String
+    ) -> Result<niri_ipc::Reply, anyhow::Error> {
+        let stream = self.niri_reader.get_mut();
+
+        let mut payload: String = serde_json::to_string(request)
+            .context("Failed to serialize NiriRequest to JSON")?;
+
+        payload.push('\n');
+
+        stream
+            .write_all(payload.as_bytes())
+            .await
+            .context("Failed to send niri request JSON payload")?;
+
+        stream
+            .flush()
+            .await
+            .context("Failed to flush niri request JSON payload")?;
+
+        buf.clear();
+
+        let bytes_read = self.niri_reader
+            .read_line(buf)
+            .await
+            .context("Failed to read niri IPC reply from niri request JSON payload")?;
+
+        if bytes_read == 0 {
+            bail!("Failed to read niri IPC reply from niri request JSON payload");
+        };
+
+        let reply: niri_ipc::Reply = serde_json::from_str(buf).context("Failed to parse niri request into reply")?;
+
+        //can be of Reply::Err or Reply::Ok
+        Ok(reply)
+
+    }
 }

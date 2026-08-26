@@ -26,7 +26,7 @@ impl Daemon {
         }
     }
 
-    pub async fn run(&self) -> Result<(), anyhow::Error> {
+    pub async fn run(self) -> Result<(), anyhow::Error> {
         tokio::try_join!(self.niri_listener.run(), self.action_listener.run())?;
         Ok(())
     }
