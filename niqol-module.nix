@@ -9,11 +9,15 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      description = "Package containing the niqol exectuable";
+      description = "Package containing the niqol executables";
     };
   };
 
   config = lib.mkIf cfg.enable {
+    home.packages = [
+      cfg.package
+    ];
+
     systemd.user.services.niqol = {
       Unit = {
         Description = "Niqol daemon";
