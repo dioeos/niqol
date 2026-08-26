@@ -1,5 +1,6 @@
 use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::sync::Arc;
 
 use anyhow::{Context, bail};
 use niri_ipc::Event;
@@ -11,11 +12,11 @@ use tokio::{
 use crate::niri::NiriConnector;
 
 pub struct NiriListener {
-    niri_connector: NiriConnector,
+    niri_connector: Arc<NiriConnector>,
 }
 
 impl NiriListener {
-    pub fn new(connector: NiriConnector) -> Self {
+    pub fn new(connector: Arc<NiriConnector>) -> Self {
         Self {
             niri_connector: connector,
         }

@@ -1,37 +1,30 @@
-use std::{ffi::OsString, fs::OpenOptions, io::Write, thread, time::Duration};
+use std::{ffi::OsString, sync::Arc};
 
-use crate::niri::{NiriConnector, NiriListener};
+use crate::{
+    niri::{NiriConnector, NiriListener},
+    actions::{ActionListener}
+};
 
 pub struct Daemon {
-    niri_listener: NiriListener
+    niri_listener: NiriListener,
+    action_listener: ActionListener
 }
 
 impl Daemon {
     pub fn new(niri_socket_path: OsString) -> Self {
-        let niri_connector = 
-            NiriConnector::new(niri_socket_path.into());
+        let niri_connector = Arc::new(NiriConnector::new(niri_socket_path.into()));
 
         Self {
-            niri_listener: NiriListener::new(niri_connector)
+            niri_listener: NiriListener::new(niri_connector.clone()),
+            action_listener: ActionListener::new(niri_connector)
         }
     }
 
     pub async fn run(&self) -> Result<(), anyhow::Error> {
-        self.niri_listener
-            .run()
-            .await?;
+        tokio::try_join!(
+            self.niri_listener.run(),
+            self.action_listener.run()
+        )?;
         Ok(())
-    }
-
-    pub fn heartbeat(&self) -> Result<Self, anyhow::Error> {
-        loop {
-            let mut file = OpenOptions::new()
-                .read(true)
-                .append(true)
-                .create(true)
-                .open("/tmp/niqol.log")?;
-            writeln!(file, "niqol heartbeat...")?;
-            thread::sleep(Duration::from_secs(1));
-        }
     }
 }
