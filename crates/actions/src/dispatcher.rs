@@ -11,7 +11,7 @@ pub async fn dispatch_action(action: ActionRequest) -> Result<(), anyhow::Error>
     let action_json_payload: String = serde_json::to_string(&action)
         .context("Failed to serialize action request to JSON")?;
 
-    write_paylad_to_actions_socket(actions_stream, action_json_payload).await?;
+    write_payload_to_actions_socket(actions_stream, action_json_payload).await?;
 
     Ok(())
 }
@@ -28,7 +28,7 @@ async fn connect_actions_socket() -> Result<UnixStream, anyhow::Error> {
     Ok(actions_stream)
 }
 
-async fn write_paylad_to_actions_socket(
+async fn write_payload_to_actions_socket(
     stream: UnixStream,
     json_payload: String
 ) -> Result<(), anyhow::Error> {
