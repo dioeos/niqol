@@ -11,3 +11,6 @@ tokio = { version = "1.53.1", features = ["full"] }
 niri-ipc = "=26.4.0"
 serde_json = "1.0"
 serde = { version = "1.0.229", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "std", "fmt"] }
+dotenvy = "0.15"

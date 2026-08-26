@@ -1,5 +1,7 @@
 use std::{ffi::OsString, sync::Arc};
 
+use tracing::info;
+
 use crate::{
     actions::ActionListener,
     niri::{NiriConnector, NiriListener},
@@ -26,7 +28,13 @@ impl Daemon {
         }
     }
 
+    #[tracing::instrument(
+        name = "daemon",
+        level = "info",
+        skip(self)
+    )]
     pub async fn run(self) -> Result<(), anyhow::Error> {
+        info!("starting listeners");
         tokio::try_join!(self.niri_listener.run(), self.action_listener.run())?;
         Ok(())
     }

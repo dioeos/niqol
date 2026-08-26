@@ -2,6 +2,7 @@ use std::{env::var_os, ffi::OsString, fs::{self, OpenOptions}, io::ErrorKind, pa
 
 use anyhow::{Context, bail};
 use tokio::{io::{BufReader, AsyncBufReadExt}, net::{UnixListener, UnixStream}};
+use tracing::info;
 
 use crate::{actions::{ActionHandler, action::ActionRequest}, niri::NiriConnector, stores::MarkStore};
 
@@ -23,7 +24,13 @@ impl ActionListener {
         }
     }
 
+    #[tracing::instrument(
+        name = "action_listener",
+        level = "info",
+        skip(self)
+    )]
     pub async fn run(self) -> Result<(), anyhow::Error> {
+        info!("listener started");
         let action_socket = Self::create_action_socket()
             .context("Failed to initialize action socket")?;
 

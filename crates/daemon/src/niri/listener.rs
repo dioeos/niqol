@@ -8,6 +8,7 @@ use tokio::{
     io::{AsyncBufReadExt, BufReader},
     net::UnixStream,
 };
+use tracing::info;
 
 use crate::niri::NiriConnector;
 use crate::stores::MarkStore;
@@ -28,7 +29,13 @@ impl NiriListener {
         }
     }
 
+    #[tracing::instrument(
+        name = "niri_listener",
+        level = "info",
+        skip(self)
+    )]
     pub async fn run(&self) -> Result<(), anyhow::Error> {
+        info!("listener started");
         let stream = self
             .niri_connector
             .connect()
