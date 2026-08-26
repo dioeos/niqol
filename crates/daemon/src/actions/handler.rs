@@ -48,7 +48,7 @@ impl ActionHandler {
                 let focused_window: niri_ipc::Window = niri_window
                     .context("Cannot mark window because no window is focused")?;
 
-                // self.mark_store.map.insert(slot, focused_window.id);
+                self.mark_store.insert_mark(slot, focused_window.id).await;
             }
         }
         Ok(())
