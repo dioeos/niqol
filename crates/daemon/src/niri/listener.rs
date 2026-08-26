@@ -10,15 +10,21 @@ use tokio::{
 };
 
 use crate::niri::NiriConnector;
+use crate::stores::MarkStore;
 
 pub struct NiriListener {
     niri_connector: Arc<NiriConnector>,
+    mark_store: Arc<MarkStore>
 }
 
 impl NiriListener {
-    pub fn new(connector: Arc<NiriConnector>) -> Self {
+    pub fn new(
+        connector: Arc<NiriConnector>,
+        mark_store: Arc<MarkStore>
+    ) -> Self {
         Self {
             niri_connector: connector,
+            mark_store
         }
     }
 

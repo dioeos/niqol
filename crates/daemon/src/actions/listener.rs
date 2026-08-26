@@ -3,20 +3,23 @@ use std::{env::var_os, ffi::OsString, fs::{self, OpenOptions}, io::ErrorKind, pa
 use anyhow::{Context, bail};
 use tokio::{io::{BufReader, AsyncBufReadExt}, net::{UnixListener, UnixStream}};
 
-use crate::{actions::{ActionHandler, action::ActionRequest}, niri::NiriConnector};
+use crate::{actions::{ActionHandler, action::ActionRequest}, niri::NiriConnector, stores::MarkStore};
 
 
 
 pub struct ActionListener {
-    niri_connector: Arc<NiriConnector>
+    niri_connector: Arc<NiriConnector>,
+    mark_store: Arc<MarkStore>
 }
 
 impl ActionListener {
     pub fn new(
-        connector: Arc<NiriConnector>
+        connector: Arc<NiriConnector>,
+        mark_store: Arc<MarkStore>
     ) -> Self {
         Self {
-            niri_connector: connector
+            niri_connector: connector,
+            mark_store
         }
     }
 

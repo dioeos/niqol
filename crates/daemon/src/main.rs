@@ -3,6 +3,7 @@ use std::{env::var_os};
 mod daemon;
 mod niri;
 mod actions;
+mod stores;
 
 use anyhow::Context;
 use daemon::Daemon;
