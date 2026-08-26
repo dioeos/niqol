@@ -20,7 +20,7 @@ in
       };
 
       Service = {
-        ExecStart = "${cfg.package}/bin/niqol";
+        ExecStart = "${cfg.package}/bin/niqol-daemon";
         Restart = "on-failure";
       };
 
