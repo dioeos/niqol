@@ -2,7 +2,7 @@ use std::{env::var_os, ffi::OsString, fs::{self, OpenOptions}, io::ErrorKind, pa
 
 use anyhow::{Context, bail};
 use tokio::{io::{BufReader, AsyncBufReadExt}, net::{UnixListener, UnixStream}};
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::{actions::{ActionHandler, action::ActionRequest}, niri::NiriConnector, stores::MarkStore};
 
@@ -35,11 +35,6 @@ impl ActionListener {
             .context("Failed to initialize action socket")?;
 
         let mut line = String::new();
-        let mut file = OpenOptions::new()
-            .read(true)
-            .append(true)
-            .create(true)
-            .open("/tmp/niqol-actions.log")?;
 
         let stream  = self
             .niri_connector
@@ -56,7 +51,10 @@ impl ActionListener {
 
             let action_request 
                 = Self::read_action_socket_stream(&mut stream_reader, &mut line).await?;
-            handler.handle_action_request(action_request, &mut file).await?;
+
+            debug!(?action_request, "received action request");
+
+            handler.handle_action_request(action_request).await?;
         }
     }
 

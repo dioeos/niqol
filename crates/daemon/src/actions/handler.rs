@@ -2,6 +2,7 @@ use std::{fs::File, sync::Arc, io::Write};
 
 use anyhow::{Context, bail};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, net::UnixStream};
+use tracing::{debug, info};
 
 use crate::{actions::action::ActionRequest, stores::MarkStore};
 
@@ -26,19 +27,20 @@ impl ActionHandler {
     pub async fn handle_action_request(
         &mut self,
         action_request: ActionRequest,
-        file: &mut File
     ) -> Result<(), anyhow::Error> {
         let mut line = String::new();
 
+        debug!("handling action request");
+
         match action_request {
             ActionRequest::MarkWindow { slot } => {
-                writeln!(file, "Requested to mark window: {}", slot)?;
-
                 let reply = self
                     .send_niri_request(&niri_ipc::Request::FocusedWindow, &mut line)
                     .await?
                     .map_err(anyhow::Error::msg)
                     .context("Niri reject FocusedWindow request")?;
+
+                debug!(?reply, "received niri reply");
 
                 let niri_window = match reply {
                     niri_ipc::Response::FocusedWindow(window) => window,
@@ -51,6 +53,7 @@ impl ActionHandler {
                 self.mark_store.insert_mark(slot, focused_window.id).await;
             }
         }
+        info!(?action_request, "action_completed");
         Ok(())
     }
 
