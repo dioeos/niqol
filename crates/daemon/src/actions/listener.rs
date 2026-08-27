@@ -4,23 +4,26 @@ use anyhow::{Context, bail};
 use tokio::{io::{BufReader, AsyncBufReadExt}, net::{UnixListener, UnixStream}};
 use tracing::{debug, info};
 
-use crate::{actions::{ActionHandler, action::ActionRequest}, niri::NiriConnector, stores::MarkStore};
+use crate::{actions::{ActionHandler, action::ActionRequest}, niri::NiriConnector, stores::{MarkStore, WindowStore}};
 
 
 
 pub struct ActionListener {
     niri_connector: Arc<NiriConnector>,
-    mark_store: Arc<MarkStore>
+    mark_store: Arc<MarkStore>,
+    window_store: Arc<WindowStore>
 }
 
 impl ActionListener {
     pub fn new(
         connector: Arc<NiriConnector>,
-        mark_store: Arc<MarkStore>
+        mark_store: Arc<MarkStore>,
+        window_store: Arc<WindowStore>
     ) -> Self {
         Self {
             niri_connector: connector,
-            mark_store
+            mark_store,
+            window_store
         }
     }
 

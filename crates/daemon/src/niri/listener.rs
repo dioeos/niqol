@@ -11,21 +11,24 @@ use tokio::{
 use tracing::info;
 
 use crate::niri::NiriConnector;
-use crate::stores::MarkStore;
+use crate::stores::{MarkStore, WindowStore};
 
 pub struct NiriListener {
     niri_connector: Arc<NiriConnector>,
-    mark_store: Arc<MarkStore>
+    mark_store: Arc<MarkStore>,
+    window_store: Arc<WindowStore>
 }
 
 impl NiriListener {
     pub fn new(
         connector: Arc<NiriConnector>,
-        mark_store: Arc<MarkStore>
+        mark_store: Arc<MarkStore>,
+        window_store: Arc<WindowStore>
     ) -> Self {
         Self {
             niri_connector: connector,
-            mark_store
+            mark_store,
+            window_store
         }
     }
 
