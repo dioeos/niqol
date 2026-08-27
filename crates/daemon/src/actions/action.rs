@@ -3,5 +3,6 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ActionRequest {
-    MarkWindow { slot: u8 }
+    MarkWindow { slot: u8 },
+    FocusMark { slot: u8 }
 }
