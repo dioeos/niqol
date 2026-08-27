@@ -1,8 +1,7 @@
-use std::fs::{File, OpenOptions};
-use std::io::Write;
 use std::sync::Arc;
 
 use anyhow::{Context, bail};
+use tracing::{debug, trace};
 use niri_ipc::Event;
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
@@ -48,20 +47,15 @@ impl NiriListener {
         let mut stream_reader: BufReader<UnixStream> = BufReader::new(stream);
 
         let mut line = String::new();
-        let mut file = OpenOptions::new()
-            .read(true)
-            .append(true)
-            .create(true)
-            .open("/tmp/niqol.log")?;
 
         self.niri_connector
-            .send_event_stream_handshake(&mut stream_reader, &mut line, &mut file)
+            .send_event_stream_handshake(&mut stream_reader, &mut line)
             .await?;
 
         loop {
             let event: Event = Self::read_niri_stream(&mut stream_reader, &mut line).await?;
 
-            Self::handle_niri_event(event, &mut file).await?;
+            Self::handle_niri_event(event).await?;
         }
     }
 
@@ -77,7 +71,7 @@ impl NiriListener {
             .context("Failed to read niri IPC event")?;
 
         if bytes_read == 0 {
-            bail!("Failed to read niri IPC event");
+            bail!("niri IPC event stream closed unexpectedly");
         };
 
         let event: Event = serde_json::from_str(buf).context("Failed to parse niri IPC event")?;
@@ -85,13 +79,13 @@ impl NiriListener {
         Ok(event)
     }
 
-    async fn handle_niri_event(event: Event, file: &mut File) -> Result<(), anyhow::Error> {
+    async fn handle_niri_event(event: Event) -> Result<(), anyhow::Error> {
         match event {
             Event::WindowFocusChanged { id: Some(id) } => {
-                writeln!(file, "Window focus changed: {}", id)?;
+                debug!(window_id = id, "window focus changed");
             }
             _ => {
-                writeln!(file, "Handling some event")?;
+                trace!(?event, "ignoring niri event");
             }
         }
         Ok(())

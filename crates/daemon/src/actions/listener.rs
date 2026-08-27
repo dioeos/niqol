@@ -1,4 +1,4 @@
-use std::{env::var_os, ffi::OsString, fs::{self, OpenOptions}, io::ErrorKind, path::PathBuf, sync::Arc};
+use std::{env::var_os, ffi::OsString, fs::{self}, io::ErrorKind, path::PathBuf, sync::Arc};
 
 use anyhow::{Context, bail};
 use tokio::{io::{BufReader, AsyncBufReadExt}, net::{UnixListener, UnixStream}};

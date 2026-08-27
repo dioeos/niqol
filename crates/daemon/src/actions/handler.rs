@@ -1,4 +1,4 @@
-use std::{fs::File, sync::Arc, io::Write};
+use std::{sync::Arc};
 
 use anyhow::{Context, bail};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, net::UnixStream};

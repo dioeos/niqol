@@ -1,6 +1,5 @@
-use std::fs::File;
-use std::io::Write;
 use std::{path::PathBuf};
+use tracing::{debug};
 use anyhow::{Context, bail};
 use tokio::net::UnixStream;
 use tokio::io::{AsyncWriteExt, BufReader, AsyncBufReadExt};
@@ -29,7 +28,6 @@ impl NiriConnector {
         &self,
         reader: &mut BufReader<UnixStream>,
         buf: &mut String,
-        file: &mut File
     ) -> Result<(), anyhow::Error> {
         let stream = reader.get_mut();
 
@@ -54,17 +52,17 @@ impl NiriConnector {
             .context("Failed to read niri IPC reply from handshake")?;
 
         if bytes_read == 0 {
-            bail!("Failed to read niri IPC reply from handshake");
+            bail!("niri closed the connection before acknowledging EventStream");
         };
 
         let reply: Reply = serde_json::from_str(buf).context("Failed to parse niri handshake reply")?;
 
         match reply {
             Reply::Ok(Response::Handled) => {
-                writeln!(file, "Handshake succeeded!")?;
+                debug!("event stream handshake succeeded");
+                Ok(())
             }
             _ => bail!("Handshake failed. Did not receive ack from niri")
         }
-        Ok(())
     }
 }
