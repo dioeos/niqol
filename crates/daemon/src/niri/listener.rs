@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use anyhow::{Context, bail};
-use tracing::{debug, trace};
 use niri_ipc::Event;
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
     net::UnixStream,
 };
 use tracing::info;
+use tracing::{debug, trace};
 
 use crate::niri::NiriConnector;
 use crate::stores::{MarkStore, WindowStore};
@@ -15,27 +15,23 @@ use crate::stores::{MarkStore, WindowStore};
 pub struct NiriListener {
     niri_connector: Arc<NiriConnector>,
     mark_store: Arc<MarkStore>,
-    window_store: Arc<WindowStore>
+    window_store: Arc<WindowStore>,
 }
 
 impl NiriListener {
     pub fn new(
         connector: Arc<NiriConnector>,
         mark_store: Arc<MarkStore>,
-        window_store: Arc<WindowStore>
+        window_store: Arc<WindowStore>,
     ) -> Self {
         Self {
             niri_connector: connector,
             mark_store,
-            window_store
+            window_store,
         }
     }
 
-    #[tracing::instrument(
-        name = "niri_listener",
-        level = "info",
-        skip(self)
-    )]
+    #[tracing::instrument(name = "niri_listener", level = "info", skip(self))]
     pub async fn run(&self) -> Result<(), anyhow::Error> {
         info!("listener started");
         let stream = self
@@ -55,7 +51,7 @@ impl NiriListener {
         loop {
             let event: Event = Self::read_niri_stream(&mut stream_reader, &mut line).await?;
 
-            Self::handle_niri_event(event).await?;
+            self.handle_niri_event(event).await?;
         }
     }
 
@@ -79,14 +75,20 @@ impl NiriListener {
         Ok(event)
     }
 
-    async fn handle_niri_event(event: Event) -> Result<(), anyhow::Error> {
+    async fn handle_niri_event(&self, event: Event) -> Result<(), anyhow::Error> {
         match event {
             Event::WindowFocusChanged { id: Some(id) } => {
                 debug!(window_id = id, "window focus changed");
             }
             Event::WorkspacesChanged { workspaces } => {
                 debug!(workspace_count = workspaces.len(), "workspaces changed");
-                trace!(workspaces = ?workspaces, "worksapce state");
+                trace!(workspaces = ?workspaces, "workspace state");
+            }
+            Event::WindowsChanged { windows } => {
+                //an snapshot event that primarily fires once subscribed to niri's event stream
+                debug!(windows_count = windows.len(), "windows changed");
+                trace!(windows = ?windows, "window state");
+                self.window_store.replace_store(windows).await;
             }
             _ => {
                 trace!(?event, "ignoring niri event");
