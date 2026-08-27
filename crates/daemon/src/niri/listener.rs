@@ -84,6 +84,10 @@ impl NiriListener {
             Event::WindowFocusChanged { id: Some(id) } => {
                 debug!(window_id = id, "window focus changed");
             }
+            Event::WorkspacesChanged { workspaces } => {
+                debug!(workspace_count = workspaces.len(), "workspaces changed");
+                trace!(workspaces = ?workspaces, "worksapce state");
+            }
             _ => {
                 trace!(?event, "ignoring niri event");
             }
