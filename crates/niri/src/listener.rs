@@ -91,7 +91,8 @@ mod tests {
     async fn run_fails_when_niri_connection_cannot_be_initialized() {
         let (_dir, path) = socket_path();
         let connector = Arc::new(NiriConnector::new(path));
-        let listener = NiriListener::new(connector);
+        let handler = Arc::new(NiriEventHandler::new());
+        let listener = NiriListener::new(connector, handler);
 
         let err = listener.run().await.unwrap_err();
 
@@ -118,7 +119,8 @@ mod tests {
         });
 
         let connector = Arc::new(NiriConnector::new(path));
-        let listener = NiriListener::new(connector);
+        let handler = Arc::new(NiriEventHandler::new());
+        let listener = NiriListener::new(connector, handler);
 
         let err = listener.run().await.unwrap_err();
         let chain = format!("{err:#}");
