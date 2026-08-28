@@ -1,25 +1,25 @@
 use std::sync::Arc;
 
-use anyhow::Context;
-use tokio::io::BufReader;
+use anyhow::{Context, bail};
+use niri_ipc::Event;
+use tokio::{
+    io::{AsyncBufReadExt, BufReader},
+    net::UnixStream,
+};
 use tracing::info;
 
 use crate::NiriConnector;
 
-
 pub struct NiriListener {
-    niri_connector: Arc<NiriConnector>
+    niri_connector: Arc<NiriConnector>,
 }
 
 impl NiriListener {
-    pub fn new(
-        niri_connector: Arc<NiriConnector>
-    ) -> Self {
-        Self {
-            niri_connector
-        }
+    pub fn new(niri_connector: Arc<NiriConnector>) -> Self {
+        Self { niri_connector }
     }
 
+    #[tracing::instrument(name = "niri_listener", level = "info", skip(self))]
     pub async fn run(&self) -> anyhow::Result<()> {
         info!("listener started");
         let stream = self
@@ -36,16 +36,42 @@ impl NiriListener {
             .await
             .context("Failed to initialize niri event stream")?;
 
-        Ok(())
+        loop {
+            let event: Event = Self::read_niri_stream(&mut stream_reader, &mut buf).await?;
+        }
+    }
+
+    async fn read_niri_stream(
+        reader: &mut BufReader<UnixStream>,
+        buf: &mut String,
+    ) -> anyhow::Result<Event> {
+        buf.clear();
+
+        let bytes_read = reader
+            .read_line(buf)
+            .await
+            .context("Failed to read niri IPC event")?;
+
+        if bytes_read == 0 {
+            bail!("niri IPC event stream closed unexpectedly")
+        }
+
+        let event: Event =
+            serde_json::from_str(buf).context("Failed to deserialize niri IPC event")?;
+
+        Ok(event)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::path::PathBuf;
     use tempfile::tempdir;
-    use tokio::{io::AsyncBufReadExt, net::UnixListener};
-    use super::*;
+    use tokio::{
+        io::{AsyncBufReadExt, AsyncWriteExt},
+        net::UnixListener,
+    };
 
     fn socket_path() -> (tempfile::TempDir, PathBuf) {
         let dir = tempdir().unwrap();
@@ -62,7 +88,8 @@ mod tests {
         let err = listener.run().await.unwrap_err();
 
         assert!(
-            err.to_string().contains("Failed to initialize niri connection")
+            err.to_string()
+                .contains("Failed to initialize niri connection")
         );
     }
 
@@ -89,10 +116,90 @@ mod tests {
         let chain = format!("{err:#}");
 
         assert!(chain.contains("Failed to initialize niri event stream"));
-        assert!(chain.contains(
-                "niri closed the connection before acknowledging EventStream"
-        ));
+        assert!(chain.contains("niri closed the connection before acknowledging EventStream"));
 
         server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn read_niri_stream_returns_event() {
+        let (client_stream, mut server_stream) = UnixStream::pair().unwrap();
+
+        let event = Event::WindowFocusChanged { id: Some(42) };
+
+        let mut payload = serde_json::to_string(&event).unwrap();
+        payload.push('\n');
+
+        server_stream.write_all(payload.as_bytes()).await.unwrap();
+
+        let mut reader = BufReader::new(client_stream);
+        let mut buf = String::new();
+
+        let received = NiriListener::read_niri_stream(&mut reader, &mut buf)
+            .await
+            .unwrap();
+
+        assert!(matches!(
+                received,
+                Event::WindowFocusChanged { id: Some(42) }
+        ));
+    }
+
+    #[tokio::test]
+    async fn read_niri_stream_fails_when_stream_closes() {
+        let (client_stream, server_stream) = UnixStream::pair().unwrap();
+
+        drop(server_stream);
+
+        let mut reader = BufReader::new(client_stream);
+        let mut buf = String::new();
+
+        let err = NiriListener::read_niri_stream(&mut reader, &mut buf)
+            .await
+            .unwrap_err();
+
+        assert!(
+            err.to_string()
+                .contains("niri IPC event stream closed unexpectedly")
+        );
+    }
+
+    #[tokio::test]
+    async fn read_niri_stream_can_read_consecutive_events() {
+        let (client_stream, mut server_stream) = UnixStream::pair().unwrap();
+
+        let first = Event::WindowFocusChanged { id: Some(42) };
+        let second = Event::WindowFocusChanged { id: Some(43) };
+
+        let payload = format!(
+            "{}\n{}\n",
+            serde_json::to_string(&first).unwrap(),
+            serde_json::to_string(&second).unwrap()
+        );
+
+        server_stream
+            .write_all(payload.as_bytes())
+            .await
+            .unwrap();
+
+        let mut reader = BufReader::new(client_stream);
+        let mut buf = String::new();
+
+        let first_received = NiriListener::read_niri_stream(&mut reader, &mut buf)
+            .await
+            .unwrap();
+
+        let second_received = NiriListener::read_niri_stream(&mut reader, &mut buf)
+            .await
+            .unwrap();
+
+        assert!(matches!(
+                first_received,
+                Event::WindowFocusChanged { id: Some(42) }
+        ));
+        assert!(matches!(
+                second_received,
+                Event::WindowFocusChanged { id: Some(43) }
+        ));
     }
 }

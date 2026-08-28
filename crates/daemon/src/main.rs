@@ -1,5 +1,5 @@
 use std::{env::var_os, sync::Arc}; 
-use niqol_niri::NiriConnector;
+use niqol_niri::{NiriConnector, NiriListener};
 use tracing_subscriber::{fmt, EnvFilter};
 
 mod daemon;
@@ -33,5 +33,7 @@ async fn main() -> Result<(), anyhow::Error> {
     // let niri_connector = NiriConnector::new(niri_socket_path.into());
 
     let niri_connector = Arc::new(NiriConnector::new(niri_socket_path.into()));
+
+    let niri_listener = NiriListener::new(niri_connector);
     Ok(())
 }
