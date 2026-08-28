@@ -8,15 +8,22 @@ use tokio::{
 };
 use tracing::info;
 
-use crate::NiriConnector;
+use crate::{NiriConnector, handler::NiriEventHandler};
 
 pub struct NiriListener {
     niri_connector: Arc<NiriConnector>,
+    niri_event_handler: Arc<NiriEventHandler>
 }
 
 impl NiriListener {
-    pub fn new(niri_connector: Arc<NiriConnector>) -> Self {
-        Self { niri_connector }
+    pub fn new(
+        niri_connector: Arc<NiriConnector>,
+        niri_event_handler: Arc<NiriEventHandler>
+    ) -> Self {
+        Self {
+            niri_connector,
+            niri_event_handler
+        }
     }
 
     #[tracing::instrument(name = "niri_listener", level = "info", skip(self))]
@@ -38,6 +45,7 @@ impl NiriListener {
 
         loop {
             let event: Event = Self::read_niri_stream(&mut stream_reader, &mut buf).await?;
+            self.niri_event_handler.handle_niri_event(event).await?;
         }
     }
 
