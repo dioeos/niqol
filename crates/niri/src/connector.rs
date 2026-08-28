@@ -166,6 +166,7 @@ mod tests {
             reader.read_line(&mut line).await.unwrap();
 
             //connection drops (no reply)
+            drop(reader)
         });
 
         let connector = NiriConnector::new(path);
