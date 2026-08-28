@@ -248,6 +248,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "niqol-niri"
+version = "0.1.0"
+
+[[package]]
 name = "niri-ipc"
 version = "26.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

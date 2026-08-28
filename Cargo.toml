@@ -2,7 +2,8 @@
 resolver = "3"
 members = [
     "crates/daemon",
-    "crates/actions"
+    "crates/actions",
+    "crates/niri"
 ]
 
 [workspace.dependencies]
@@ -14,3 +15,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "std", "fmt"] }
 dotenvy = "0.15"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.95"
