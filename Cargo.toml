@@ -3,7 +3,8 @@ resolver = "3"
 members = [
     "crates/daemon",
     "crates/actions",
-    "crates/niri"
+    "crates/niri",
+    "crates/core"
 ]
 
 [workspace.dependencies]
