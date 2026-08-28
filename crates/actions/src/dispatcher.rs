@@ -1,6 +1,7 @@
 use std::{env::var_os, ffi::OsString, path::PathBuf};
 
 use anyhow::Context;
+use tracing::debug;
 use tokio::{io::{AsyncWriteExt, BufWriter}, net::UnixStream};
 
 use crate::action::ActionRequest;
@@ -12,6 +13,8 @@ pub async fn dispatch_action(action: ActionRequest) -> Result<(), anyhow::Error>
         .context("Failed to serialize action request to JSON")?;
 
     write_payload_to_actions_socket(actions_stream, action_json_payload).await?;
+
+    debug!(?action, "dispatched action");
 
     Ok(())
 }

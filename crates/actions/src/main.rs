@@ -1,3 +1,5 @@
+use tracing_subscriber::{fmt, EnvFilter};
+
 mod action;
 mod dispatcher;
 
@@ -6,7 +8,20 @@ use action::NiqolActions;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    println!("Hello, World!");
+    dotenvy::dotenv().ok();
+    let format = fmt::format()
+        .with_level(true)
+        .with_target(true)
+        .compact();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("info"))
+        )
+        .event_format(format)
+        .init();
+
     let args = NiqolActions::parse_from(get_args());
     dispatcher::dispatch_action(args.action_request).await?;
 

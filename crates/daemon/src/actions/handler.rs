@@ -2,7 +2,7 @@ use std::{sync::Arc};
 
 use anyhow::{Context, bail};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, net::UnixStream};
-use tracing::{debug, info, trace};
+use tracing::{debug, info};
 
 use crate::{actions::action::ActionRequest, stores::MarkStore};
 
@@ -54,7 +54,7 @@ impl ActionHandler {
             }
             ActionRequest::FocusMark { slot } => {
                 let Some(window_id_to_focus) = self.mark_store.get_mark(slot).await else {
-                    trace!(slot = slot, "no marked window found; ignoring focus request");
+                    debug!(slot = slot, "no marked window found; ignoring focus request");
                     return Ok(())
                 };
 

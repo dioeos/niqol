@@ -7,7 +7,7 @@ pub struct NiqolActions {
     #[command(subcommand)]
     pub action_request: ActionRequest
 }
-#[derive(Subcommand, Serialize)]
+#[derive(Subcommand, Serialize, Debug)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ActionRequest {
     MarkWindow { slot: u8 },
