@@ -1,4 +1,5 @@
-use std::{env::var_os}; 
+use std::{env::var_os, sync::Arc}; 
+use niqol_niri::NiriConnector;
 use tracing_subscriber::{fmt, EnvFilter};
 
 mod daemon;
@@ -28,8 +29,9 @@ async fn main() -> Result<(), anyhow::Error> {
     let niri_socket_path = var_os("NIRI_SOCKET")
         .context("NIRI_SOCKET environment varialbe is not set")?;
 
-    let daemon = Daemon::new(niri_socket_path);
+    // let daemon = Daemon::new(niri_socket_path);
+    // let niri_connector = NiriConnector::new(niri_socket_path.into());
 
-    daemon.run().await?;
+    let niri_connector = Arc::new(NiriConnector::new(niri_socket_path.into()));
     Ok(())
 }
