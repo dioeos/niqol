@@ -12,7 +12,7 @@ pub struct NiriConnector {
 }
 
 impl NiriConnector {
-    pub async fn new(niri_socket_path: PathBuf) -> Self {
+    pub fn new(niri_socket_path: PathBuf) -> Self {
         Self {
             niri_socket_path
         }
@@ -69,5 +69,158 @@ impl NiriConnector {
             }
             _ => bail!("Handshake failed. Did not receive ack from niri")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+    use tokio::{
+        io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+        net::UnixListener
+    };
+
+    fn socket_path() -> (tempfile::TempDir, PathBuf) {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("niri-test.sock");
+        (dir, path)
+    }
+
+    #[tokio::test]
+    async fn connect_succeeds_when_socket_exists() {
+        let (_dir, path) = socket_path();
+        let listener = UnixListener::bind(&path).unwrap();
+
+        let accept_task = tokio::spawn(async move {
+            let (_stream, _) = listener.accept().await.unwrap();
+        });
+
+        let connector = NiriConnector::new(path);
+
+        connector.connect().await.unwrap();
+
+        accept_task.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn connect_fails_when_socket_missing() {
+        let (_dir, path) = socket_path();
+
+        let connector = NiriConnector::new(path);
+
+        let err = connector.connect().await.unwrap_err();
+
+        assert!(
+            err.to_string().contains("Failed to connect niri socket")
+        );
+    }
+
+    #[tokio::test]
+    async fn send_event_stream_handshake_sends_event_stream_request() {
+        let (_dir, path) = socket_path();
+        let listener = UnixListener::bind(&path).unwrap();
+
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut reader = BufReader::new(stream);
+
+            let mut line = String::new();
+            reader.read_line(&mut line).await.unwrap();
+
+            let request: Request = serde_json::from_str(&line).unwrap();
+
+            assert!(matches!(request, Request::EventStream));
+
+            let reply = Reply::Ok(Response::Handled);
+            let mut response = serde_json::to_string(&reply).unwrap();
+            response.push('\n');
+
+            reader.get_mut().write_all(response.as_bytes()).await.unwrap();
+            reader.get_mut().flush().await.unwrap();
+        });
+
+        let connector = NiriConnector::new(path);
+        let stream = connector.connect().await.unwrap();
+        let mut reader = BufReader::new(stream);
+        let mut buf = String::new();
+
+        connector
+            .send_event_stream_handshake(&mut reader, &mut buf)
+            .await
+            .unwrap();
+
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn send_event_stream_handshake_fails_when_server_disconnects() {
+        let (_dir, path) = socket_path();
+        let listener = UnixListener::bind(&path).unwrap();
+
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut reader = BufReader::new(stream);
+
+            let mut line = String::new();
+            reader.read_line(&mut line).await.unwrap();
+
+            //connection drops (no reply)
+        });
+
+        let connector = NiriConnector::new(path);
+        let stream = connector.connect().await.unwrap();
+        let mut reader = BufReader::new(stream);
+        let mut buf = String::new();
+
+        let err = connector
+            .send_event_stream_handshake(&mut reader, &mut buf)
+            .await
+            .unwrap_err();
+
+        assert!(
+            err.to_string()
+                .contains("niri closed the connection before acknowledging EventStream")
+        );
+
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn send_event_stream_handshake_fails_on_unexpected_reply() {
+        let (_dir, path) = socket_path();
+        let listener = UnixListener::bind(&path).unwrap();
+
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut reader = BufReader::new(stream);
+            let mut line = String::new();
+
+            reader.read_line(&mut line).await.unwrap();
+            let reply = Reply::Err("request rejected".into());
+
+            let mut response = serde_json::to_string(&reply).unwrap();
+            response.push('\n');
+
+            reader.get_mut().write_all(response.as_bytes()).await.unwrap();
+            reader.get_mut().flush().await.unwrap();
+        });
+
+        let connector = NiriConnector::new(path);
+        let stream = connector.connect().await.unwrap();
+        let mut reader = BufReader::new(stream);
+        let mut buf = String::new();
+
+        let err = connector
+            .send_event_stream_handshake(&mut reader, &mut buf)
+            .await
+            .unwrap_err();
+
+        assert!(
+            err.to_string()
+                .contains("Handshake failed. Did not receive ack from niri")
+        );
+
+        server.await.unwrap();
     }
 }
