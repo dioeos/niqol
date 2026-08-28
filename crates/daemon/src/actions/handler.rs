@@ -59,9 +59,10 @@ impl ActionHandler {
                 };
 
                 let action = niri_ipc::Action::FocusWindow { id: window_id_to_focus };
+                let request = niri_ipc::Request::Action(action);
 
                 let response = self
-                    .send_niri_action(&action, &mut line)
+                    .send_niri_request(&request, &mut line)
                     .await?
                     .map_err(anyhow::Error::msg)
                     .with_context(|| {
@@ -82,44 +83,6 @@ impl ActionHandler {
         }
         info!(?action_request, "action_completed");
         Ok(())
-    }
-
-    async fn send_niri_action(
-        &mut self,
-        action: &niri_ipc::Action,
-        buf: &mut String
-    ) -> Result<niri_ipc::Reply, anyhow::Error> {
-        let stream = self.niri_reader.get_mut();
-
-        let mut payload: String = serde_json::to_string(action)
-            .context("Failed to serialize NiriAction to JSON")?;
-
-        payload.push('\n');
-
-        stream
-            .write_all(payload.as_bytes())
-            .await
-            .context("Failed to send niri action JSON payload")?;
-
-        stream
-            .flush()
-            .await
-            .context("Failed to flush niri action JSON payload")?;
-
-        buf.clear();
-
-        let bytes_read = self.niri_reader
-            .read_line(buf)
-            .await
-            .context("Failed to read niri IPC reply from niri action JSON payload")?;
-
-        if bytes_read == 0 {
-            bail!("niri ipc closed before acknowledging action: {action:?}");
-        }
-
-        let reply: niri_ipc::Reply = serde_json::from_str(buf).context("Failed to parse niri action into reply")?;
-
-        Ok(reply)
     }
 
     async fn send_niri_request(
