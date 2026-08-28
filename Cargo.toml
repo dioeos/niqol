@@ -2,7 +2,7 @@
 resolver = "3"
 members = [
     "crates/daemon",
-    "crates/actions",
+    "crates/cli",
     "crates/niri",
     "crates/core"
 ]

@@ -242,7 +242,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "niqol-actions"
+name = "niqol-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
