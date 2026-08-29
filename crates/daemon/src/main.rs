@@ -3,6 +3,7 @@ use niqol_niri::{NiriConnector, NiriEvent, NiriListener, NiriWindowManager};
 use std::{env::var_os, sync::Arc};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing_subscriber::{EnvFilter, fmt};
+use tracing::{debug};
 
 mod actions;
 mod daemon;
@@ -57,6 +58,7 @@ async fn main() -> Result<(), anyhow::Error> {
         niri_listener.run(),
         async move {
             while let Some(niri_event) = niri_rx.recv().await {
+                debug!("Handling niri event");
                 event_handler
                     .handle_event(niri_event)
                     .await?;
