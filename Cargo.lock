@@ -262,6 +262,7 @@ dependencies = [
  "niri-ipc",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber",

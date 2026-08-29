@@ -29,8 +29,10 @@ async fn main() -> Result<(), anyhow::Error> {
 }
 
 fn get_args() -> Vec<String> {
-    let mut raw_args: Vec<String> = std::env::args().collect();
+    normalize_args(std::env::args().collect())
+}
 
+fn normalize_args(mut raw_args: Vec<String>) -> Vec<String> {
     if raw_args.get(1).map(String::as_str) == Some("niqol") {
         raw_args.remove(1);
     }
