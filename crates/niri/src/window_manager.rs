@@ -4,19 +4,21 @@ use anyhow::{Context, bail};
 use async_trait::async_trait;
 use niqol_core::{Window, WindowId, WindowManager};
 use niri_ipc::{Action, Reply, Request, Response};
-use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, net::UnixStream, sync::Mutex};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::UnixStream,
+    sync::Mutex,
+};
 use tracing::debug;
 
 use crate::{NiriConnector, conversions::from_niri_window};
 
 pub struct NiriWindowManager {
-    stream_reader_connection: Mutex<BufReader<UnixStream>>
+    stream_reader_connection: Mutex<BufReader<UnixStream>>,
 }
 
 impl NiriWindowManager {
-    pub async fn connect(
-        connector: Arc<NiriConnector>
-    ) -> anyhow::Result<Self> {
+    pub async fn connect(connector: Arc<NiriConnector>) -> anyhow::Result<Self> {
         let stream = connector
             .connect()
             .await
@@ -25,24 +27,21 @@ impl NiriWindowManager {
         Ok(Self::from_stream(stream))
     }
 
-    fn from_stream(
-        stream: UnixStream
-    ) -> Self {
-        Self { stream_reader_connection: Mutex::new(BufReader::new(stream)) }
+    fn from_stream(stream: UnixStream) -> Self {
+        Self {
+            stream_reader_connection: Mutex::new(BufReader::new(stream)),
+        }
     }
 
     async fn send_niri_request(
         &self,
         request: &Request,
-        buf: &mut String
+        buf: &mut String,
     ) -> anyhow::Result<Reply> {
-        let mut payload: String = serde_json::to_string(&request)
-            .context("Failed to serialize niri request to JSON")?;
+        let mut payload: String =
+            serde_json::to_string(&request).context("Failed to serialize niri request to JSON")?;
 
-        let mut connection_guard = self
-            .stream_reader_connection
-            .lock()
-            .await;
+        let mut connection_guard = self.stream_reader_connection.lock().await;
 
         let stream: &mut UnixStream = connection_guard.get_mut();
 
@@ -69,7 +68,8 @@ impl NiriWindowManager {
             bail!("niri closed the connection before acknowledging niri request");
         }
 
-        let reply: Reply = serde_json::from_str(buf).context("Failed to deserialize niri request into reply")?;
+        let reply: Reply =
+            serde_json::from_str(buf).context("Failed to deserialize niri request into reply")?;
 
         //can be of Reply::Err or Reply::Ok(Response::<T>)
         Ok(reply)
@@ -78,9 +78,7 @@ impl NiriWindowManager {
 
 #[async_trait]
 impl WindowManager for NiriWindowManager {
-    async fn get_focused_window(
-        &self
-    ) -> anyhow::Result<Option<Window>> {
+    async fn get_focused_window(&self) -> anyhow::Result<Option<Window>> {
         let mut buf = String::new();
 
         let response = self
@@ -95,7 +93,7 @@ impl WindowManager for NiriWindowManager {
                 debug!("No focused window");
                 None
             }
-            other => bail!("Expected FocusedWindow response, received: {other:?}")
+            other => bail!("Expected FocusedWindow response, received: {other:?}"),
         };
 
         let domain_window = niri_window.map(from_niri_window);
@@ -103,10 +101,7 @@ impl WindowManager for NiriWindowManager {
         Ok(domain_window)
     }
 
-    async fn focus_window(
-        &self,
-        id: WindowId
-    ) -> anyhow::Result<()> {
+    async fn focus_window(&self, id: WindowId) -> anyhow::Result<()> {
         let mut buf = String::new();
 
         let action = Action::FocusWindow { id: id.0 };
@@ -119,10 +114,58 @@ impl WindowManager for NiriWindowManager {
             .context("niri rejected FocusWindow action request")?;
 
         match response {
-            Response::Handled => {
-                Ok(())
-            }
-            other => bail!("Expected Handled response, received: {other:?}")
+            Response::Handled => Ok(()),
+            other => bail!("Expected Handled response, received: {other:?}"),
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn niri_wm_sends_niri_request() {
+        let (client_stream, server_stream) = UnixStream::pair().unwrap();
+
+        let server = tokio::spawn(async move {
+            let mut reader = BufReader::new(server_stream);
+            let mut buf = String::new();
+
+            reader.read_line(&mut buf).await.unwrap();
+
+            let received_request: Request = serde_json::from_str(&buf).unwrap();
+
+            assert!(matches!(
+                received_request,
+                Request::Action(Action::FocusWindow { id: 42 })
+            ));
+
+            let reply = Reply::Ok(Response::Handled);
+            let mut payload = serde_json::to_string(&reply).unwrap();
+            payload.push('\n');
+
+            reader
+                .get_mut()
+                .write_all(payload.as_bytes())
+                .await
+                .unwrap();
+            reader.get_mut().flush().await.unwrap();
+        });
+
+        let niri_wm = NiriWindowManager::from_stream(client_stream);
+        let request = Request::Action(Action::FocusWindow { id: 42 });
+
+        let mut buf = String::new();
+
+        let response = niri_wm
+            .send_niri_request(&request, &mut buf)
+            .await
+            .expect("sending the niri request should succeed")
+            .expect("niri should accept the request");
+
+        assert!(matches!(response, Response::Handled));
+        server.await.unwrap();
+    }
+}
+

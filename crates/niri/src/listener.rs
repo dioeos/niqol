@@ -80,6 +80,7 @@ impl NiriListener {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use niri_ipc::{Reply, Request, Response};
     use tempfile::tempdir;
     use tokio::{
         io::{AsyncBufReadExt, AsyncWriteExt},
@@ -95,6 +96,58 @@ mod tests {
     fn create_listener(connector: Arc<NiriConnector>) -> NiriListener {
         let (niri_tx, _niri_rx) = mpsc::channel(32);
         NiriListener::new(connector, niri_tx)
+    }
+
+    #[tokio::test]
+    async fn run_sends_niri_event() {
+        let (_dir, path) = socket_path();
+        let listener = UnixListener::bind(&path).unwrap();
+
+        //server stream (niri) needs to be writing events
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut reader = BufReader::new(stream);
+            let mut buf = String::new();
+            //read that the run function send event stream
+            reader.read_line(&mut buf).await.unwrap();
+
+            let request: Request = serde_json::from_str(&buf).unwrap();
+
+            assert!(matches!(request, Request::EventStream));
+
+            let reply = Reply::Ok(Response::Handled);
+            let mut reply_payload = serde_json::to_string(&reply).unwrap();
+            reply_payload.push('\n');
+
+            reader.get_mut().write_all(reply_payload.as_bytes()).await.unwrap();
+            reader.get_mut().flush().await.unwrap();
+
+            let event = Event::WindowFocusChanged { id: Some(42) };
+            let mut event_payload = serde_json::to_string(&event).unwrap();
+            event_payload.push('\n');
+
+            reader.get_mut().write_all(event_payload.as_bytes()).await.unwrap();
+            reader.get_mut().flush().await.unwrap();
+        });
+
+        let (niri_tx, mut niri_rx) = mpsc::channel(32);
+
+        let connector = Arc::new(NiriConnector::new(path));
+        let listener = NiriListener::new(connector, niri_tx);
+
+        let run_task = tokio::spawn(async move {
+            listener.run().await.unwrap();
+        });
+
+        let received_event = niri_rx.recv().await.unwrap();
+
+        assert!(matches!(
+            received_event,
+            niri_ipc::Event::WindowFocusChanged { id: Some(42) }
+        ));
+        
+        drop(run_task);
+        server.await.unwrap();
     }
 
     #[tokio::test]
