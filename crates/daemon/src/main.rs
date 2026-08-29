@@ -1,6 +1,7 @@
 use niqol_core::{MarkService, WindowManager};
-use niqol_niri::{NiriConnector, NiriEventHandler, NiriListener, NiriWindowManager};
+use niqol_niri::{NiriConnector, NiriEvent, NiriListener, NiriWindowManager};
 use std::{env::var_os, sync::Arc};
+use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing_subscriber::{EnvFilter, fmt};
 
 mod actions;
@@ -8,7 +9,12 @@ mod daemon;
 mod niri;
 mod stores;
 
+mod handlers;
+
 use anyhow::Context;
+
+use crate::handlers::EventHandler;
+
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -30,26 +36,33 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let niri_connector = Arc::new(NiriConnector::new(niri_socket_path.into()));
 
-    let niri_wm: Arc<dyn WindowManager> = Arc::new(
-        NiriWindowManager::connect(Arc::clone(&niri_connector)).await?
-    );
+    let niri_wm: Arc<dyn WindowManager> =
+        Arc::new(NiriWindowManager::connect(Arc::clone(&niri_connector)).await?);
 
     //mark service should need niri_wm
-    let mark_service = Arc::new(
-        MarkService::new(niri_wm)
-    );
-
-    let niri_event_handler = Arc::new(NiriEventHandler::new());
-
-    let niri_listener = NiriListener::new(niri_connector, niri_event_handler);
+    let mark_service = Arc::new(MarkService::new(niri_wm));
 
     //mark service required in niri listener to listen to events
     //and update marks say if windows close (remove marks)
-    
+    let event_handler = EventHandler::new(mark_service);
 
     //mark service also required in action listener to handle events
     //such as marking windows and fetching window information and focusing marks
 
-    tokio::try_join!(niri_listener.run())?;
+    let (niri_tx, mut niri_rx): (Sender<NiriEvent>, Receiver<NiriEvent>) = mpsc::channel(32);
+
+    let niri_listener = NiriListener::new(niri_connector, niri_tx);
+
+    tokio::try_join!(
+        niri_listener.run(),
+        async move {
+            while let Some(niri_event) = niri_rx.recv().await {
+                event_handler
+                    .handle_event(niri_event)
+                    .await?;
+            }
+            Ok::<_, anyhow::Error>(())
+        }
+    )?;
     Ok(())
 }

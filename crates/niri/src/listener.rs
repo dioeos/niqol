@@ -4,25 +4,25 @@ use anyhow::{Context, bail};
 use niri_ipc::Event;
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
-    net::UnixStream,
+    net::UnixStream, sync::mpsc::Sender,
 };
 use tracing::info;
 
-use crate::{NiriConnector, handler::NiriEventHandler};
+use crate::{NiriConnector};
 
 pub struct NiriListener {
     niri_connector: Arc<NiriConnector>,
-    niri_event_handler: Arc<NiriEventHandler>
+    niri_tx: Sender<niri_ipc::Event>
 }
 
 impl NiriListener {
     pub fn new(
         niri_connector: Arc<NiriConnector>,
-        niri_event_handler: Arc<NiriEventHandler>
+        niri_tx: Sender<niri_ipc::Event>
     ) -> Self {
         Self {
             niri_connector,
-            niri_event_handler
+            niri_tx
         }
     }
 
@@ -45,7 +45,12 @@ impl NiriListener {
 
         loop {
             let event: Event = Self::read_niri_stream(&mut stream_reader, &mut buf).await?;
-            self.niri_event_handler.handle_niri_event(event).await?;
+
+            //@TODO: this should emit domain model instead of niri_ipc in the future
+            self.niri_tx
+                .send(event)
+                .await
+                .context("Failed to emit niri event to daemon")?;
         }
     }
 
@@ -78,7 +83,7 @@ mod tests {
     use tempfile::tempdir;
     use tokio::{
         io::{AsyncBufReadExt, AsyncWriteExt},
-        net::UnixListener,
+        net::UnixListener, sync::mpsc,
     };
 
     fn socket_path() -> (tempfile::TempDir, PathBuf) {
@@ -87,12 +92,17 @@ mod tests {
         (dir, path)
     }
 
+    fn create_listener(connector: Arc<NiriConnector>) -> NiriListener {
+        let (niri_tx, _niri_rx) = mpsc::channel(32);
+        NiriListener::new(connector, niri_tx)
+    }
+
     #[tokio::test]
     async fn run_fails_when_niri_connection_cannot_be_initialized() {
         let (_dir, path) = socket_path();
         let connector = Arc::new(NiriConnector::new(path));
-        let handler = Arc::new(NiriEventHandler::new());
-        let listener = NiriListener::new(connector, handler);
+
+        let listener = create_listener(connector);
 
         let err = listener.run().await.unwrap_err();
 
@@ -119,8 +129,7 @@ mod tests {
         });
 
         let connector = Arc::new(NiriConnector::new(path));
-        let handler = Arc::new(NiriEventHandler::new());
-        let listener = NiriListener::new(connector, handler);
+        let listener = create_listener(connector);
 
         let err = listener.run().await.unwrap_err();
         let chain = format!("{err:#}");
