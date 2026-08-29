@@ -7,7 +7,6 @@ use tracing::{debug};
 
 mod actions;
 mod daemon;
-mod niri;
 mod stores;
 
 mod handlers;
