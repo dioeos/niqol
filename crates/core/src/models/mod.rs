@@ -1,1 +1,3 @@
-pub mod window;
+mod window;
+
+pub use window::{Window, WindowId};

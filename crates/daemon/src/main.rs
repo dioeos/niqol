@@ -1,3 +1,4 @@
+use niqol_core::MarkService;
 use niqol_niri::{NiriConnector, NiriEventHandler, NiriListener};
 use std::{env::var_os, sync::Arc};
 use tracing_subscriber::{EnvFilter, fmt};
@@ -30,6 +31,8 @@ async fn main() -> Result<(), anyhow::Error> {
     let niri_connector = Arc::new(NiriConnector::new(niri_socket_path.into()));
 
     let niri_event_handler = Arc::new(NiriEventHandler::new());
+
+    let mark_service = Arc::new(MarkService::new());
 
     let niri_listener = NiriListener::new(niri_connector, niri_event_handler);
 

@@ -259,6 +259,11 @@ dependencies = [
 [[package]]
 name = "niqol-core"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "niqol-daemon"
@@ -266,6 +271,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "dotenvy",
+ "niqol-core",
  "niqol-niri",
  "niri-ipc",
  "serde",
