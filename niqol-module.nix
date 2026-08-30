@@ -28,6 +28,8 @@ in
     systemd.user.services.niqol = {
       Unit = {
         Description = "Niqol daemon";
+        PartOf = [ "graphical-session.target" ];
+        After = [ "graphical-session.target" ];
       };
 
       Service = {
@@ -40,7 +42,7 @@ in
       };
 
       Install = {
-        WantedBy = [ "default.target" ];
+        WantedBy = [ "graphical-session.target" ];
       };
     };
   };
