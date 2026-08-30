@@ -38,4 +38,17 @@ impl MarkService {
 
         Ok(())
     }
+
+    pub async fn focus_marked_window(
+        &self,
+        slot: u8
+    ) -> anyhow::Result<()> {
+        let Some(window_id) = self.mark_store.get_mark(slot).await else {
+            debug!(mark = slot, "no window marked");
+            return Ok(())
+        };
+
+        self.window_manager.focus_window(window_id).await?;
+        Ok(())
+    }
 }

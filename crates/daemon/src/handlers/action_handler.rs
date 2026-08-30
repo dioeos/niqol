@@ -24,7 +24,7 @@ impl ActionHandler {
                 self.mark_service.mark_focused_window(slot).await?;
             }
             ActionRequest::FocusMark { slot } => {
-                debug!("Focusing mark");
+                self.mark_service.focus_marked_window(slot).await?;
             }
         }
         debug!(action_request = ?request, "successfully handled");
