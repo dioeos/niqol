@@ -6,3 +6,6 @@ result
 crates/*/target/
 target/
 
+# Vicinae related
+node_modules
+vicinae-env.d.ts

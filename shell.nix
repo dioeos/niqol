@@ -10,6 +10,8 @@ pkgs.mkShell {
 
     nixd
     nixfmt
+
+    just
   ];
 
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
