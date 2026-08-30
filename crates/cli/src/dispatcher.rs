@@ -1,10 +1,9 @@
 use std::{env::var_os, ffi::OsString, path::PathBuf};
 
 use anyhow::Context;
+use niqol_core::ActionRequest;
 use tracing::debug;
 use tokio::{io::{AsyncWriteExt, BufWriter}, net::UnixStream};
-
-use crate::action::ActionRequest;
 
 pub async fn dispatch_action(action: ActionRequest) -> Result<(), anyhow::Error> {
     let actions_stream = connect_actions_socket().await?;

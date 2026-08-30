@@ -15,6 +15,7 @@ pub struct NiriListener {
     niri_tx: Sender<niri_ipc::Event>
 }
 
+//@TODO: Should migrate to niqol-daemon since it will interact with app state
 impl NiriListener {
     pub fn new(
         niri_connector: Arc<NiriConnector>,

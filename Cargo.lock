@@ -259,6 +259,7 @@ dependencies = [
  "anyhow",
  "clap",
  "dotenvy",
+ "niqol-core",
  "niri-ipc",
  "serde",
  "serde_json",
@@ -274,6 +275,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "clap",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
 ]
@@ -284,6 +288,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "dotenvy",
+ "niqol-cli",
  "niqol-core",
  "niqol-niri",
  "niri-ipc",

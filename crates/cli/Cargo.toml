@@ -5,6 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+niqol-core = { path = "../core" }
 anyhow.workspace = true
 tokio.workspace = true
 niri-ipc.workspace = true
