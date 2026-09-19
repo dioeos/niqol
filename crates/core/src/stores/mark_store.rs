@@ -5,20 +5,31 @@ use tokio::sync::RwLock;
 use crate::WindowId;
 
 pub(crate) struct MarkStore {
-    map: RwLock<HashMap<u8, WindowId>>
+    marks: RwLock<[Option<WindowId>; 8]>
 }
 
 impl MarkStore {
     pub(crate) fn new() -> Self {
-        Self { map: RwLock::new(HashMap::new()) }
+        Self { marks: RwLock::new([None; 8]) }
     }
 
     pub(crate) async fn insert_mark(&self, slot: u8, id: WindowId) {
-        self.map.write().await.insert(slot, id);
+        let index = usize::from(slot - 1);
+        let mut rw_guard = self.marks.write().await;
+
+        for mark in rw_guard.iter_mut() {
+            if *mark == Some(id) {
+                *mark = None;
+            }
+        }
+
+        rw_guard[index] = Some(id);
     }
 
     pub(crate) async fn get_mark(&self, slot: u8) -> Option<WindowId> {
-        self.map.read().await.get(&slot).copied()
+        let index = usize::from(slot - 1);
+        let rw_guard = self.marks.read().await;
+        rw_guard[index]
     }
 }
 
@@ -41,5 +52,17 @@ mod tests {
         let store = MarkStore::new();
 
         assert_eq!(store.get_mark(1).await, None);
+    }
+
+    #[tokio::test]
+    async fn moves_existing_mark_to_requested() {
+        let store = MarkStore::new();
+        let id = WindowId(67);
+        store.insert_mark(1, id).await;
+
+        assert_eq!(store.get_mark(1).await, Some(id));
+        store.insert_mark(2, id).await;
+        assert_eq!(store.get_mark(1).await, None);
+        assert_eq!(store.get_mark(2).await, Some(id));
     }
 }

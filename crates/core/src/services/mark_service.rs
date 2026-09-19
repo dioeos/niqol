@@ -55,7 +55,16 @@ impl MarkService {
         Ok(())
     }
 
-    pub fn set_last_focused_slot(&self, slot: u8) {
+    // pub async fn focus_next_marked_window(
+    //     &self
+    // ) -> anyhow::Result<()> {
+    // }
+
+    fn set_last_focused_slot(&self, slot: u8) {
         *self.last_focused_slot.lock().unwrap() = Some(slot);
+    }
+
+    fn last_focused_slot(&self) -> Option<u8> {
+        *self.last_focused_slot.lock().unwrap()
     }
 }
