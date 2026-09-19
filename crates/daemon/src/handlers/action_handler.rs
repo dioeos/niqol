@@ -26,6 +26,9 @@ impl ActionHandler {
             ActionRequest::FocusMark { slot } => {
                 self.mark_service.focus_marked_window(slot).await?;
             }
+            ActionRequest::NextMark => {
+                todo!()
+            }
         }
         debug!(action_request = ?request, "successfully handled");
         Ok(())

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Mutex, Arc};
 use tracing::{debug};
 
 
@@ -7,7 +7,8 @@ use crate::{WindowManager, stores::MarkStore};
 
 pub struct MarkService {
     mark_store: Arc<MarkStore>,
-    window_manager: Arc<dyn WindowManager>
+    window_manager: Arc<dyn WindowManager>,
+    last_focused_slot: Mutex<Option<u8>>
 }
 
 impl MarkService {
@@ -16,7 +17,8 @@ impl MarkService {
     ) -> Self {
         Self {
             mark_store: Arc::new(MarkStore::new()),
-            window_manager
+            window_manager,
+            last_focused_slot: Mutex::new(None)
         }
     }
 
@@ -34,8 +36,8 @@ impl MarkService {
         let debug_slot = slot;
 
         self.mark_store.insert_mark(slot, focused_window.id).await;
+        self.set_last_focused_slot(slot);
         debug!(window_id = window_id.0, mark = debug_slot, "mark focused window");
-
         Ok(())
     }
 
@@ -49,6 +51,11 @@ impl MarkService {
         };
 
         self.window_manager.focus_window(window_id).await?;
+        self.set_last_focused_slot(slot);
         Ok(())
+    }
+
+    pub fn set_last_focused_slot(&self, slot: u8) {
+        *self.last_focused_slot.lock().unwrap() = Some(slot);
     }
 }
