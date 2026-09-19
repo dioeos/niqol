@@ -4,6 +4,8 @@ use tracing::{debug};
 
 use crate::{WindowManager, stores::MarkStore};
 
+const MARK_STORE_LAST_POS: u8 = 8;
+
 
 pub struct MarkService {
     mark_store: Arc<MarkStore>,
@@ -55,16 +57,28 @@ impl MarkService {
         Ok(())
     }
 
-    // pub async fn focus_next_marked_window(
-    //     &self
-    // ) -> anyhow::Result<()> {
-    // }
+    pub async fn focus_next_marked_window(
+        &self
+    ) -> anyhow::Result<()> {
+        let last_slot = *self.last_focused_slot.lock().unwrap();
+
+        let next_slot = match last_slot {
+            Some(slot) if slot < MARK_STORE_LAST_POS => slot + 1,
+            _ => 1
+        };
+
+        let Some(window_id) = self.mark_store.get_mark(next_slot).await else {
+            debug!(mark = next_slot, "no window marked");
+            return Ok(())
+        };
+
+        self.window_manager.focus_window(window_id).await?;
+        self.set_last_focused_slot(next_slot);
+
+        Ok(())
+    }
 
     fn set_last_focused_slot(&self, slot: u8) {
         *self.last_focused_slot.lock().unwrap() = Some(slot);
-    }
-
-    fn last_focused_slot(&self) -> Option<u8> {
-        *self.last_focused_slot.lock().unwrap()
     }
 }

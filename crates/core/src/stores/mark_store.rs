@@ -31,6 +31,11 @@ impl MarkStore {
         let rw_guard = self.marks.read().await;
         rw_guard[index]
     }
+
+    pub(crate) async fn first_mark(&self) -> Option<WindowId> {
+        let rw_guard = self.marks.read().await;
+        rw_guard[0]
+    }
 }
 
 #[cfg(test)]
