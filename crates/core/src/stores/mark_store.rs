@@ -32,9 +32,21 @@ impl MarkStore {
         rw_guard[index]
     }
 
-    pub(crate) async fn first_mark(&self) -> Option<WindowId> {
+    // pub(crate) async fn first_mark(&self) -> Option<WindowId> {
+    //     let rw_guard = self.marks.read().await;
+    //     rw_guard[0]
+    // }
+
+    pub(crate) async fn next_mark(&self, current_slot: usize) -> (Option<usize>, Option<WindowId>) {
         let rw_guard = self.marks.read().await;
-        rw_guard[0]
+        for step in 1..=rw_guard.len() {
+            let index = (current_slot + step) % rw_guard.len();
+            if let Some(window_id) = rw_guard[index] {
+                return (Some(index), Some(window_id));
+            }
+        }
+
+        (None, None)
     }
 }
 
