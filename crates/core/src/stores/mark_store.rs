@@ -8,6 +8,9 @@ pub(crate) struct MarkStore {
     marks: RwLock<[Option<WindowId>; 9]>
 }
 
+//@NOTE: `next_mark` and `prev_mark` are internal functions and therefore operate with 0-based
+//        indices rather than 1-based slots. `insert_mark` and `get_mark` are user facing functions
+//        as they operate based on what the user wants to do, which is why there are 1-based slots.
 impl MarkStore {
     pub(crate) fn new() -> Self {
         Self { marks: RwLock::new([None; 9]) }
@@ -31,11 +34,6 @@ impl MarkStore {
         let rw_guard = self.marks.read().await;
         rw_guard[index]
     }
-
-    // pub(crate) async fn first_mark(&self) -> Option<WindowId> {
-    //     let rw_guard = self.marks.read().await;
-    //     rw_guard[0]
-    // }
 
     pub(crate) async fn next_mark(&self, current_slot: usize) -> (Option<usize>, Option<WindowId>) {
         let rw_guard = self.marks.read().await;
@@ -93,5 +91,25 @@ mod tests {
         store.insert_mark(2, id).await;
         assert_eq!(store.get_mark(1).await, None);
         assert_eq!(store.get_mark(2).await, Some(id));
+    }
+
+    #[tokio::test]
+    async fn next_mark_wraps_when_index_overflows() {
+        let store = MarkStore::new();
+        let id = WindowId(67);
+        store.insert_mark(1, id).await;
+
+        let result = store.next_mark(8).await;
+        assert_eq!(result, (Some(0), Some(id)));
+    }
+
+    #[tokio::test]
+    async fn prev_mark_wraps_when_index_underflows() {
+        let store = MarkStore::new();
+        let id = WindowId(67);
+        store.insert_mark(9, id).await;
+
+        let result = store.prev_mark(0).await;
+        assert_eq!(result, (Some(8), Some(id)));
     }
 }
