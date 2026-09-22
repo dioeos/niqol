@@ -5,6 +5,11 @@ pkgs.mkShell {
     niqol-pkg
   ];
 
+  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+    pkgs.wayland
+    pkgs.libxkbcommon
+  ];
+
   packages = with pkgs; [
     rustfmt
     clippy
@@ -12,6 +17,8 @@ pkgs.mkShell {
 
     nixd
     nixfmt
+
+    slint-lsp
   ];
 
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";

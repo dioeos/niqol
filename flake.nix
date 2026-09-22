@@ -17,6 +17,17 @@
       src = ./.;
 
       cargoLock.lockFile = ./Cargo.lock;
+
+      nativeBuildInputs = [ pkgs.pkg-config pkgs.makeWrapper ];
+      buildInputs = [ pkgs.fontconfig ];
+
+      postFixup = ''
+        wrapProgram "$out/bin/niqol-ui" \
+          --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath [
+            pkgs.wayland
+            pkgs.libxkbcommon
+          ]}"
+      '';
     };
   in
   {
