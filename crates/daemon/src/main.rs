@@ -5,9 +5,6 @@ use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::debug;
 use tracing_subscriber::{EnvFilter, fmt};
 
-mod stores;
-
-//new modules block
 mod action_socket;
 mod handlers;
 mod listeners;

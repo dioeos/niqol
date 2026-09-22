@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use tokio::sync::RwLock;
 
 use crate::WindowId;

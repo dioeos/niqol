@@ -6,7 +6,7 @@ use tokio::{
     net::UnixStream,
     sync::mpsc::Sender,
 };
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::action_socket::ActionSocket;
 
