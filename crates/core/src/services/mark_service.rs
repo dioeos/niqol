@@ -28,7 +28,7 @@ impl MarkService {
         let debug_slot = slot;
 
         self.mark_store.insert_mark(slot, focused_window.id).await;
-        self.set_last_focused_slot(usize::from(slot));
+        self.set_last_focused_slot(usize::from(slot - 1));
         debug!(
             window_id = window_id.0,
             mark = debug_slot,
@@ -44,7 +44,7 @@ impl MarkService {
         };
 
         self.window_manager.focus_window(window_id).await?;
-        self.set_last_focused_slot(usize::from(slot));
+        self.set_last_focused_slot(usize::from(slot - 1));
         Ok(())
     }
 
