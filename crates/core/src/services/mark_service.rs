@@ -69,6 +69,27 @@ impl MarkService {
         Ok(())
     }
 
+    pub async fn focus_prev_marked_window(&self) -> anyhow::Result<()> {
+        let last_slot = *self.last_focused_slot.lock().unwrap();
+
+        let Some(slot) = last_slot else {
+            debug!("no slot");
+            return Ok(());
+        };
+
+        let (Some(index), Some(window_id_to_focus)) = 
+            self.mark_store.prev_mark(slot).await
+        else {
+            debug!(mark = slot, "no window marked");
+            return Ok(());
+        };
+
+        self.window_manager.focus_window(window_id_to_focus).await?;
+        self.set_last_focused_slot(index);
+
+        Ok(())
+    }
+
     fn set_last_focused_slot(&self, slot: usize) {
         *self.last_focused_slot.lock().unwrap() = Some(slot);
     }

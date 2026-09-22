@@ -7,4 +7,5 @@ pub enum ActionRequest {
     MarkWindow { slot: u8 },
     FocusMark { slot: u8 },
     NextMark,
+    PrevMark
 }

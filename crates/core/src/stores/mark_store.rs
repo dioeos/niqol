@@ -5,12 +5,12 @@ use tokio::sync::RwLock;
 use crate::WindowId;
 
 pub(crate) struct MarkStore {
-    marks: RwLock<[Option<WindowId>; 8]>
+    marks: RwLock<[Option<WindowId>; 9]>
 }
 
 impl MarkStore {
     pub(crate) fn new() -> Self {
-        Self { marks: RwLock::new([None; 8]) }
+        Self { marks: RwLock::new([None; 9]) }
     }
 
     pub(crate) async fn insert_mark(&self, slot: u8, id: WindowId) {
@@ -43,6 +43,18 @@ impl MarkStore {
             let index = (current_slot + step) % rw_guard.len();
             if let Some(window_id) = rw_guard[index] {
                 return (Some(index), Some(window_id));
+            }
+        }
+
+        (None, None)
+    }
+
+    pub(crate) async fn prev_mark(&self, current_slot: usize) -> (Option<usize>, Option<WindowId>) {
+        let rw_guard = self.marks.read().await;
+        for step in 1..=rw_guard.len() {
+            let index = (current_slot + rw_guard.len() - step) % rw_guard.len();
+            if let Some(window_id) = rw_guard[index] {
+                return (Some(index), Some(window_id))
             }
         }
 

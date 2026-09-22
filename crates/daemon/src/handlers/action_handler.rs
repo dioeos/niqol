@@ -29,6 +29,9 @@ impl ActionHandler {
             ActionRequest::NextMark => {
                 self.mark_service.focus_next_marked_window().await?;
             }
+            ActionRequest::PrevMark => {
+                self.mark_service.focus_prev_marked_window().await?;
+            }
         }
         debug!(action_request = ?request, "successfully handled");
         Ok(())
