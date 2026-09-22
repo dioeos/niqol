@@ -10,7 +10,7 @@
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
 
-    niqol = pkgs.rustPlatform.buildRustPackage {
+    niqol-pkg = pkgs.rustPlatform.buildRustPackage {
       pname = "niqol";
       version = "0.1.0";
 
@@ -21,10 +21,10 @@
   in
   {
     devShells.${system}.default =
-      import ./shell.nix { inherit pkgs; };
+      import ./shell.nix { inherit pkgs niqol-pkg; };
 
     packages.${system} = {
-      default = niqol;
+      default = niqol-pkg;
     };
 
     homeManagerModules.default =

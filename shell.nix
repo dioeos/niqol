@@ -1,9 +1,11 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {}, niqol-pkg }:
 
 pkgs.mkShell {
+  inputsFrom = [
+    niqol-pkg
+  ];
+
   packages = with pkgs; [
-    cargo
-    rustc
     rustfmt
     clippy
     rust-analyzer
