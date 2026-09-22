@@ -14,7 +14,11 @@ mod listeners;
 
 use anyhow::Context;
 
-use crate::{action_socket::ActionSocket, handlers::{ActionHandler, EventHandler}, listeners::ActionListener};
+use crate::{
+    action_socket::ActionSocket,
+    handlers::{ActionHandler, EventHandler},
+    listeners::ActionListener,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -68,15 +72,12 @@ async fn main() -> Result<(), anyhow::Error> {
 
     //action listener operates on a request/reply connection via niri_wm
     //does not need its own connector
-    let action_listener = ActionListener::new(
-        action_socket,
-        action_tx
-    );
+    let action_listener = ActionListener::new(action_socket, action_tx);
 
     let action_handler = ActionHandler::new(mark_service);
 
     tokio::try_join!(
-        niri_listener.run(), //listen to EventStream
+        niri_listener.run(),   //listen to EventStream
         action_listener.run(), //listen to one-off requests via cli
         async move {
             while let Some(niri_event) = niri_rx.recv().await {

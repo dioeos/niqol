@@ -8,8 +8,8 @@ pub(crate) fn from_niri_window(niri_window: niri_ipc::Window) -> niqol_core::Win
 
 #[cfg(test)]
 mod tests {
-    use niri_ipc::WindowLayout;
     use super::*;
+    use niri_ipc::WindowLayout;
 
     #[test]
     fn from_niri_window_converts_window_fields() {
@@ -29,7 +29,7 @@ mod tests {
                 tile_pos_in_workspace_view: None,
                 window_offset_in_tile: (0.0, 0.0),
             },
-            focus_timestamp: None
+            focus_timestamp: None,
         };
 
         let window = from_niri_window(niri_window);

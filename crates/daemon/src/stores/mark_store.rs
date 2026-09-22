@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 pub struct MarkStore {
-    pub map: RwLock<HashMap<u8, u64>>
+    pub map: RwLock<HashMap<u8, u64>>,
 }
 
 impl MarkStore {
     pub fn new() -> Self {
         Self {
-            map: RwLock::new(HashMap::new())
+            map: RwLock::new(HashMap::new()),
         }
     }
 

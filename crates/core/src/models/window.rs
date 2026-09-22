@@ -1,4 +1,3 @@
-
 pub struct Window {
     pub id: WindowId,
     //"Ghostty"

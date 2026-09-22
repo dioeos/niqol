@@ -1,8 +1,8 @@
 mod models;
-mod stores;
 mod services;
+mod stores;
 mod window_manager;
 
-pub use models::{WindowId, Window, ActionRequest};
+pub use models::{ActionRequest, Window, WindowId};
 pub use services::MarkService;
 pub use window_manager::WindowManager;

@@ -1,4 +1,4 @@
-use clap::{Subcommand};
+use clap::Subcommand;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Subcommand, Serialize, Debug, PartialEq, Eq)]
@@ -7,5 +7,5 @@ pub enum ActionRequest {
     MarkWindow { slot: u8 },
     FocusMark { slot: u8 },
     NextMark,
-    PrevMark
+    PrevMark,
 }

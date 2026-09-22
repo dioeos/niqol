@@ -4,26 +4,24 @@ use anyhow::{Context, bail};
 use niri_ipc::Event;
 use tokio::{
     io::{AsyncBufReadExt, BufReader},
-    net::UnixStream, sync::mpsc::Sender,
+    net::UnixStream,
+    sync::mpsc::Sender,
 };
 use tracing::info;
 
-use crate::{NiriConnector};
+use crate::NiriConnector;
 
 pub struct NiriListener {
     niri_connector: Arc<NiriConnector>,
-    niri_tx: Sender<niri_ipc::Event>
+    niri_tx: Sender<niri_ipc::Event>,
 }
 
 //@TODO: Should migrate to niqol-daemon since it will interact with app state
 impl NiriListener {
-    pub fn new(
-        niri_connector: Arc<NiriConnector>,
-        niri_tx: Sender<niri_ipc::Event>
-    ) -> Self {
+    pub fn new(niri_connector: Arc<NiriConnector>, niri_tx: Sender<niri_ipc::Event>) -> Self {
         Self {
             niri_connector,
-            niri_tx
+            niri_tx,
         }
     }
 
@@ -80,12 +78,13 @@ impl NiriListener {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
     use niri_ipc::{Reply, Request, Response};
+    use std::path::PathBuf;
     use tempfile::tempdir;
     use tokio::{
         io::{AsyncBufReadExt, AsyncWriteExt},
-        net::UnixListener, sync::mpsc,
+        net::UnixListener,
+        sync::mpsc,
     };
 
     fn socket_path() -> (tempfile::TempDir, PathBuf) {
@@ -120,14 +119,22 @@ mod tests {
             let mut reply_payload = serde_json::to_string(&reply).unwrap();
             reply_payload.push('\n');
 
-            reader.get_mut().write_all(reply_payload.as_bytes()).await.unwrap();
+            reader
+                .get_mut()
+                .write_all(reply_payload.as_bytes())
+                .await
+                .unwrap();
             reader.get_mut().flush().await.unwrap();
 
             let event = Event::WindowFocusChanged { id: Some(42) };
             let mut event_payload = serde_json::to_string(&event).unwrap();
             event_payload.push('\n');
 
-            reader.get_mut().write_all(event_payload.as_bytes()).await.unwrap();
+            reader
+                .get_mut()
+                .write_all(event_payload.as_bytes())
+                .await
+                .unwrap();
             reader.get_mut().flush().await.unwrap();
         });
 
@@ -146,7 +153,7 @@ mod tests {
             received_event,
             niri_ipc::Event::WindowFocusChanged { id: Some(42) }
         ));
-        
+
         drop(run_task);
         server.await.unwrap();
     }
@@ -213,8 +220,8 @@ mod tests {
             .unwrap();
 
         assert!(matches!(
-                received,
-                Event::WindowFocusChanged { id: Some(42) }
+            received,
+            Event::WindowFocusChanged { id: Some(42) }
         ));
     }
 
@@ -250,10 +257,7 @@ mod tests {
             serde_json::to_string(&second).unwrap()
         );
 
-        server_stream
-            .write_all(payload.as_bytes())
-            .await
-            .unwrap();
+        server_stream.write_all(payload.as_bytes()).await.unwrap();
 
         let mut reader = BufReader::new(client_stream);
         let mut buf = String::new();
@@ -267,12 +271,12 @@ mod tests {
             .unwrap();
 
         assert!(matches!(
-                first_received,
-                Event::WindowFocusChanged { id: Some(42) }
+            first_received,
+            Event::WindowFocusChanged { id: Some(42) }
         ));
         assert!(matches!(
-                second_received,
-                Event::WindowFocusChanged { id: Some(43) }
+            second_received,
+            Event::WindowFocusChanged { id: Some(43) }
         ));
     }
 }

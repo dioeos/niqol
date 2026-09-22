@@ -3,10 +3,9 @@ use std::{fs, io::ErrorKind, path::PathBuf};
 use anyhow::Context;
 use tokio::net::{UnixListener, UnixStream};
 
-
 //represents an actual socket (bi-directional stream of actions
 pub(crate) struct ActionSocket {
-    listener: UnixListener
+    listener: UnixListener,
 }
 
 impl ActionSocket {
@@ -19,16 +18,12 @@ impl ActionSocket {
                     Err(err)
                 }
             })
-        .with_context(|| format!(
-                "Failed to remove stale socket at {}",
-                socket_path.display()
-        ))?;
+            .with_context(|| {
+                format!("Failed to remove stale socket at {}", socket_path.display())
+            })?;
 
         let listener: UnixListener = UnixListener::bind(&socket_path)
-            .with_context(|| format!(
-                    "Failed to bind to socket at {}",
-                    socket_path.display()
-            ))?;
+            .with_context(|| format!("Failed to bind to socket at {}", socket_path.display()))?;
 
         Ok(Self { listener })
     }

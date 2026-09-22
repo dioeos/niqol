@@ -2,29 +2,31 @@ use std::path::PathBuf;
 
 use anyhow::{Context, bail};
 use niri_ipc::{Reply, Request, Response};
-use tracing::{debug};
-use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, net::UnixStream};
-
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::UnixStream,
+};
+use tracing::debug;
 
 // both the action_listener and niri_listener need to connect
 pub struct NiriConnector {
-    niri_socket_path: PathBuf
+    niri_socket_path: PathBuf,
 }
 
 impl NiriConnector {
     pub fn new(niri_socket_path: PathBuf) -> Self {
-        Self {
-            niri_socket_path
-        }
+        Self { niri_socket_path }
     }
 
     pub async fn connect(&self) -> anyhow::Result<UnixStream> {
         UnixStream::connect(&self.niri_socket_path)
             .await
-            .with_context(|| format!(
+            .with_context(|| {
+                format!(
                     "Failed to connect niri socket: {}",
                     self.niri_socket_path.display()
-            ))
+                )
+            })
     }
 
     pub async fn send_event_stream_handshake(
@@ -60,14 +62,15 @@ impl NiriConnector {
             bail!("niri closed the connection before acknowledging EventStream request");
         }
 
-        let reply: Reply = serde_json::from_str(buf).context("Failed to parse niri EventStream handshake reply")?;
+        let reply: Reply = serde_json::from_str(buf)
+            .context("Failed to parse niri EventStream handshake reply")?;
 
         match reply {
             Reply::Ok(Response::Handled) => {
                 debug!("event stream handshake succeeded");
                 Ok(())
             }
-            _ => bail!("Handshake failed. Did not receive ack from niri")
+            _ => bail!("Handshake failed. Did not receive ack from niri"),
         }
     }
 }
@@ -78,7 +81,7 @@ mod tests {
     use tempfile::tempdir;
     use tokio::{
         io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
-        net::UnixListener
+        net::UnixListener,
     };
 
     fn socket_path() -> (tempfile::TempDir, PathBuf) {
@@ -111,9 +114,7 @@ mod tests {
 
         let err = connector.connect().await.unwrap_err();
 
-        assert!(
-            err.to_string().contains("Failed to connect niri socket")
-        );
+        assert!(err.to_string().contains("Failed to connect niri socket"));
     }
 
     #[tokio::test]
@@ -136,7 +137,11 @@ mod tests {
             let mut response = serde_json::to_string(&reply).unwrap();
             response.push('\n');
 
-            reader.get_mut().write_all(response.as_bytes()).await.unwrap();
+            reader
+                .get_mut()
+                .write_all(response.as_bytes())
+                .await
+                .unwrap();
             reader.get_mut().flush().await.unwrap();
         });
 
@@ -203,7 +208,11 @@ mod tests {
             let mut response = serde_json::to_string(&reply).unwrap();
             response.push('\n');
 
-            reader.get_mut().write_all(response.as_bytes()).await.unwrap();
+            reader
+                .get_mut()
+                .write_all(response.as_bytes())
+                .await
+                .unwrap();
             reader.get_mut().flush().await.unwrap();
         });
 

@@ -56,9 +56,7 @@ impl MarkService {
             return Ok(());
         };
 
-        let (Some(index), Some(window_id_to_focus)) =
-            self.mark_store.next_mark(slot).await
-        else {
+        let (Some(index), Some(window_id_to_focus)) = self.mark_store.next_mark(slot).await else {
             debug!(mark = slot, "no window marked");
             return Ok(());
         };
@@ -77,9 +75,7 @@ impl MarkService {
             return Ok(());
         };
 
-        let (Some(index), Some(window_id_to_focus)) = 
-            self.mark_store.prev_mark(slot).await
-        else {
+        let (Some(index), Some(window_id_to_focus)) = self.mark_store.prev_mark(slot).await else {
             debug!(mark = slot, "no window marked");
             return Ok(());
         };

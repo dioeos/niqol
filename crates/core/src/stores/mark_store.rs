@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 use crate::WindowId;
 
 pub(crate) struct MarkStore {
-    marks: RwLock<[Option<WindowId>; 9]>
+    marks: RwLock<[Option<WindowId>; 9]>,
 }
 
 //@NOTE: `next_mark` and `prev_mark` are internal functions and therefore operate with 0-based
@@ -13,7 +13,9 @@ pub(crate) struct MarkStore {
 //        as they operate based on what the user wants to do, which is why there are 1-based slots.
 impl MarkStore {
     pub(crate) fn new() -> Self {
-        Self { marks: RwLock::new([None; 9]) }
+        Self {
+            marks: RwLock::new([None; 9]),
+        }
     }
 
     pub(crate) async fn insert_mark(&self, slot: u8, id: WindowId) {
@@ -52,7 +54,7 @@ impl MarkStore {
         for step in 1..=rw_guard.len() {
             let index = (current_slot + rw_guard.len() - step) % rw_guard.len();
             if let Some(window_id) = rw_guard[index] {
-                return (Some(index), Some(window_id))
+                return (Some(index), Some(window_id));
             }
         }
 
