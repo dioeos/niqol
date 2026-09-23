@@ -1,4 +1,4 @@
-use niqol_core::{ActionRequest, MarkService, WindowManager};
+use niqol_core::{ActionRequest, MarkService, QueryRequest, WindowManager};
 use niqol_niri::{NiriConnector, NiriEvent, NiriListener, NiriWindowManager};
 use niqol_ipc::IpcSocket;
 use std::{env::var_os, path::PathBuf, sync::Arc};
@@ -12,7 +12,7 @@ mod ipc_listener;
 use anyhow::Context;
 
 use crate::{
-    handlers::{ActionHandler, EventHandler},
+    handlers::{ActionHandler, EventHandler, QueryHandler},
 };
 
 #[tokio::main]
@@ -66,19 +66,20 @@ async fn main() -> Result<(), anyhow::Error> {
     let (action_tx, mut action_rx): (Sender<ActionRequest>, Receiver<ActionRequest>) =
         mpsc::channel(32);
 
-    //action listener operates on a request/reply connection via niri_wm
-    //does not need its own connector
-    // let action_listener = ActionListener::new(action_socket, action_tx);
+    let (query_tx, mut query_rx): (Sender<QueryRequest>, Receiver<QueryRequest>) =
+        mpsc::channel(32);
+
     let ipc_listener = ipc_listener::IpcListener::new(
         niqol_ipc_socket,
-        action_tx
+        action_tx,
+        query_tx
     );
 
-    let action_handler = ActionHandler::new(mark_service);
+    let action_handler = ActionHandler::new(mark_service.clone());
+    let query_handler = QueryHandler::new(mark_service);
 
     tokio::try_join!(
         niri_listener.run(),   //listen to EventStream
-        // action_listener.run(), //listen to one-off requests via cli
         ipc_listener.run(),
         async move {
             while let Some(niri_event) = niri_rx.recv().await {
@@ -91,6 +92,13 @@ async fn main() -> Result<(), anyhow::Error> {
             while let Some(action_request) = action_rx.recv().await {
                 debug!("Handling action request");
                 action_handler.handle_action_request(action_request).await?;
+            }
+            Ok::<_, anyhow::Error>(())
+        },
+        async move {
+            while let Some(query_request) = query_rx.recv().await {
+                debug!("Handling query request");
+                query_handler.handle_query_request(query_request).await?;
             }
             Ok::<_, anyhow::Error>(())
         }

@@ -1,4 +1,4 @@
-use niqol_core::ActionRequest;
+use niqol_core::{ActionRequest, QueryRequest};
 use niqol_ipc::{IpcSocket, request::IpcRequest};
 use tokio::{io::{AsyncBufReadExt, BufReader}, net::UnixStream, sync::mpsc::Sender};
 use anyhow::{Context, bail};
@@ -10,17 +10,20 @@ use tracing::info;
 //       such as action_tx || query_tx
 pub(super) struct IpcListener {
     ipc_socket: IpcSocket,
-    action_tx: Sender<ActionRequest>
+    action_tx: Sender<ActionRequest>,
+    query_tx: Sender<QueryRequest>
 }
 
 impl IpcListener {
     pub(super) fn new(
         ipc_socket: IpcSocket,
-        action_tx: Sender<ActionRequest>
+        action_tx: Sender<ActionRequest>,
+        query_tx: Sender<QueryRequest>
     ) -> Self {
         Self {
             ipc_socket,
-            action_tx
+            action_tx,
+            query_tx
         }
     }
 
