@@ -8,3 +8,5 @@ pub use listener::NiriListener;
 pub use window_manager::NiriWindowManager;
 
 pub use niri_ipc::Event as NiriEvent;
+
+pub use conversions::from_niri_window;

@@ -1,4 +1,4 @@
-use niqol_core::{ActionRequest, MarkService, QueryRequest, WindowManager};
+use niqol_core::{ActionRequest, MarkService, QueryRequest, WindowManager, WindowService};
 use niqol_niri::{NiriConnector, NiriEvent, NiriListener, NiriWindowManager};
 use niqol_ipc::IpcSocket;
 use std::{env::var_os, path::PathBuf, sync::Arc};
@@ -40,10 +40,14 @@ async fn main() -> Result<(), anyhow::Error> {
 
     //mark service should need niri_wm
     let mark_service = Arc::new(MarkService::new(niri_wm));
+    let window_service = Arc::new(WindowService::new());
 
     //mark service required in niri listener to listen to events
     //and update marks say if windows close (remove marks)
-    let event_handler = EventHandler::new(Arc::clone(&mark_service));
+    let event_handler = EventHandler::new(
+        Arc::clone(&mark_service),
+        Arc::clone(&window_service)
+    );
 
     //mark service also required in action listener to handle events
     //such as marking windows and fetching window information and focusing marks
@@ -75,7 +79,7 @@ async fn main() -> Result<(), anyhow::Error> {
         query_tx
     );
 
-    let action_handler = ActionHandler::new(mark_service.clone());
+    let action_handler = ActionHandler::new(Arc::clone(&mark_service));
     let query_handler = QueryHandler::new(mark_service);
 
     tokio::try_join!(
@@ -98,7 +102,7 @@ async fn main() -> Result<(), anyhow::Error> {
         async move {
             while let Some(query_request) = query_rx.recv().await {
                 debug!("Handling query request");
-                query_handler.handle_query_request(query_request).await?;
+                query_handler.handle_query_request(query_request);
             }
             Ok::<_, anyhow::Error>(())
         }
