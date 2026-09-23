@@ -19,9 +19,11 @@ pkgs.mkShell {
     nixfmt
 
     slint-lsp
-
     python3
     pyright
+
+    cargo-watch
+    just
   ];
 
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
