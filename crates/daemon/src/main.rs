@@ -1,20 +1,18 @@
 use niqol_core::{ActionRequest, MarkService, WindowManager};
 use niqol_niri::{NiriConnector, NiriEvent, NiriListener, NiriWindowManager};
+use niqol_ipc::IpcSocket;
 use std::{env::var_os, path::PathBuf, sync::Arc};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::debug;
 use tracing_subscriber::{EnvFilter, fmt};
 
-mod action_socket;
 mod handlers;
-mod listeners;
+mod ipc_listener;
 
 use anyhow::Context;
 
 use crate::{
-    action_socket::ActionSocket,
     handlers::{ActionHandler, EventHandler},
-    listeners::ActionListener,
 };
 
 #[tokio::main]
@@ -59,23 +57,29 @@ async fn main() -> Result<(), anyhow::Error> {
     let xdg_os_string =
         var_os("XDG_RUNTIME_DIR").context("XDG_RUNTIME_DIR environment variable is not set")?;
 
-    let mut action_socket_path = PathBuf::from(xdg_os_string);
-    action_socket_path.push("niqol-actions.sock");
+    let mut niqol_ipc_path = PathBuf::from(xdg_os_string);
+    niqol_ipc_path.push("niqol-ipc.sock");
 
-    let action_socket = ActionSocket::bind(action_socket_path)?;
+    // let action_socket = ActionSocket::bind(action_socket_path)?;
+    let niqol_ipc_socket = IpcSocket::bind(niqol_ipc_path)?;
 
     let (action_tx, mut action_rx): (Sender<ActionRequest>, Receiver<ActionRequest>) =
         mpsc::channel(32);
 
     //action listener operates on a request/reply connection via niri_wm
     //does not need its own connector
-    let action_listener = ActionListener::new(action_socket, action_tx);
+    // let action_listener = ActionListener::new(action_socket, action_tx);
+    let ipc_listener = ipc_listener::IpcListener::new(
+        niqol_ipc_socket,
+        action_tx
+    );
 
     let action_handler = ActionHandler::new(mark_service);
 
     tokio::try_join!(
         niri_listener.run(),   //listen to EventStream
-        action_listener.run(), //listen to one-off requests via cli
+        // action_listener.run(), //listen to one-off requests via cli
+        ipc_listener.run(),
         async move {
             while let Some(niri_event) = niri_rx.recv().await {
                 debug!("Handling niri event");

@@ -2540,6 +2540,7 @@ dependencies = [
  "anyhow",
  "dotenvy",
  "niqol-core",
+ "niqol-ipc",
  "niqol-niri",
  "niri-ipc",
  "serde",
@@ -2547,6 +2548,17 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "niqol-ipc"
+version = "0.1.0"
+dependencies = [
+ "niqol-core",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "tokio",
 ]
 
 [[package]]
