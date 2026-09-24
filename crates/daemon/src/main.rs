@@ -64,7 +64,6 @@ async fn main() -> Result<(), anyhow::Error> {
     let mut niqol_ipc_path = PathBuf::from(xdg_os_string);
     niqol_ipc_path.push("niqol-ipc.sock");
 
-    // let action_socket = ActionSocket::bind(action_socket_path)?;
     let niqol_ipc_socket = IpcSocket::bind(niqol_ipc_path)?;
 
     let (action_tx, mut action_rx): (Sender<ActionRequest>, Receiver<ActionRequest>) =
@@ -73,14 +72,15 @@ async fn main() -> Result<(), anyhow::Error> {
     let (query_tx, mut query_rx): (Sender<QueryRequest>, Receiver<QueryRequest>) =
         mpsc::channel(32);
 
+
+    let action_handler = ActionHandler::new(Arc::clone(&mark_service));
+    let query_handler = QueryHandler::new(mark_service, window_service);
+
     let ipc_listener = ipc_listener::IpcListener::new(
         niqol_ipc_socket,
         action_tx,
-        query_tx
+        query_handler
     );
-
-    let action_handler = ActionHandler::new(Arc::clone(&mark_service));
-    let query_handler = QueryHandler::new(mark_service);
 
     tokio::try_join!(
         niri_listener.run(),   //listen to EventStream
@@ -99,13 +99,6 @@ async fn main() -> Result<(), anyhow::Error> {
             }
             Ok::<_, anyhow::Error>(())
         },
-        async move {
-            while let Some(query_request) = query_rx.recv().await {
-                debug!("Handling query request");
-                query_handler.handle_query_request(query_request);
-            }
-            Ok::<_, anyhow::Error>(())
-        }
     )?;
     Ok(())
 }

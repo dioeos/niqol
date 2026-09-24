@@ -1,8 +1,14 @@
-use niqol_core::{ActionRequest, QueryRequest};
-use niqol_ipc::{IpcSocket, request::IpcRequest};
-use tokio::{io::{AsyncBufReadExt, BufReader}, net::UnixStream, sync::mpsc::Sender};
 use anyhow::{Context, bail};
+use niqol_core::{ActionRequest, QueryResponse};
+use niqol_ipc::{IpcSocket, request::IpcRequest};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::UnixStream,
+    sync::mpsc::Sender,
+};
 use tracing::info;
+
+use crate::handlers::QueryHandler;
 
 //@NOTE: The `ipc_tx` in the listener is responsible for receiving
 //       some ipc event and then broadcasting the request to the
@@ -11,19 +17,19 @@ use tracing::info;
 pub(super) struct IpcListener {
     ipc_socket: IpcSocket,
     action_tx: Sender<ActionRequest>,
-    query_tx: Sender<QueryRequest>
+    query_handler: QueryHandler,
 }
 
 impl IpcListener {
     pub(super) fn new(
         ipc_socket: IpcSocket,
         action_tx: Sender<ActionRequest>,
-        query_tx: Sender<QueryRequest>
+        query_handler: QueryHandler,
     ) -> Self {
         Self {
             ipc_socket,
             action_tx,
-            query_tx
+            query_handler,
         }
     }
 
@@ -35,8 +41,7 @@ impl IpcListener {
             let mut buf = String::new();
             let mut reader = BufReader::new(ipc_stream);
 
-            let ipc_request = 
-                Self::read_ipc_stream(&mut reader, &mut buf).await?;
+            let ipc_request = Self::read_ipc_stream(&mut reader, &mut buf).await?;
 
             match ipc_request {
                 IpcRequest::Action(action_req) => {
@@ -45,13 +50,21 @@ impl IpcListener {
                         .await
                         .context("Failed to emit action request to daemon")?;
                 }
+                IpcRequest::Query(query_req) => {
+                    let query_response: QueryResponse =
+                        self.query_handler.handle_query_request(query_req).await?;
+
+                    let mut json = serde_json::to_string(&query_response)?;
+                    json.push('\n');
+                    reader.get_mut().write_all(json.as_bytes()).await?;
+                }
             }
         }
     }
 
     async fn read_ipc_stream(
         reader: &mut BufReader<UnixStream>,
-        buf: &mut String
+        buf: &mut String,
     ) -> anyhow::Result<IpcRequest> {
         buf.clear();
 
@@ -64,8 +77,8 @@ impl IpcListener {
             bail!("ipc stream closed unexpectedly");
         }
 
-        let ipc_request: IpcRequest = serde_json::from_str(buf)
-            .context("Failed to deserialize ipc stream request")?;
+        let ipc_request: IpcRequest =
+            serde_json::from_str(buf).context("Failed to deserialize ipc stream request")?;
 
         Ok(ipc_request)
     }

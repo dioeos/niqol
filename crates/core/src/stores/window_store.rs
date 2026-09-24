@@ -24,4 +24,9 @@ impl WindowStore {
         let mut rw_guard = self.windows.write().await;
         rw_guard.remove(&window_id);
     }
+
+    pub(crate) async fn get_window(&self, window_id: WindowId) -> Option<Window> {
+        let rw_guard = self.windows.read().await;
+        rw_guard.get(&window_id).cloned()
+    }
 }

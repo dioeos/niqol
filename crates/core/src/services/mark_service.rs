@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
-use crate::{WindowManager, stores::MarkStore};
+use crate::{WindowId, WindowManager, models::Mark, stores::MarkStore};
 
 pub struct MarkService {
     mark_store: Arc<MarkStore>,
@@ -16,6 +16,10 @@ impl MarkService {
             window_manager,
             last_focused_slot: Mutex::new(None),
         }
+    }
+
+    pub async fn list_marks(&self) -> Vec<(usize, WindowId)> {
+        self.mark_store.all_marks().await
     }
 
     pub async fn mark_focused_window(&self, slot: u8) -> anyhow::Result<()> {

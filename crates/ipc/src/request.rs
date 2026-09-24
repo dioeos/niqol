@@ -1,8 +1,8 @@
-use niqol_core::ActionRequest;
-use serde::{Deserialize};
-
+use niqol_core::{ActionRequest, QueryRequest};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub enum IpcRequest {
-    Action(ActionRequest)
+    Action(ActionRequest),
+    Query(QueryRequest),
 }
