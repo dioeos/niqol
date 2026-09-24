@@ -19,6 +19,9 @@ pkgs.mkShell {
     nixfmt
 
     slint-lsp
+
+    python3
+    pyright
   ];
 
   RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
