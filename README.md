@@ -1,7 +1,7 @@
 <h1 align="center">Niqol</h1>
 
 <p align="center">
-    <strong>Supercharge your Niri workflow
+    <strong>Supercharge your Niri workflow</strong>
 </p>
 
 <p align="center">
