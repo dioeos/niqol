@@ -1,11 +1,13 @@
-mod error;
+pub mod client;
+pub mod error;
+pub mod protocol;
 pub mod request;
 
 use std::{fs, io, path::PathBuf};
 
 use tokio::net::{UnixListener, UnixStream};
 
-use crate::error::Error::{self, FailedToBindListenerToSocket, FailedToAcceptConnection};
+use crate::error::Error::{self, FailedToAcceptConnection, FailedToBindListenerToSocket};
 
 pub struct IpcSocket {
     listener: UnixListener,

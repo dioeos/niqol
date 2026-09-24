@@ -1,8 +1,8 @@
 use crate::Window;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Mark {
     pub slot: usize,
-    pub window: Window
+    pub window: Window,
 }

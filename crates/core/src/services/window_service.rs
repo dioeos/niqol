@@ -6,6 +6,7 @@ pub struct WindowService {
 }
 
 impl WindowService {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             window_store: WindowStore::new(),

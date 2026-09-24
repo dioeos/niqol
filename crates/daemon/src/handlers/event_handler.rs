@@ -32,6 +32,13 @@ impl EventHandler {
                 debug!(window_id = id, "window closed");
                 self.window_service.remove_window(WindowId(id)).await;
             }
+            NiriEvent::WindowsChanged { windows } => {
+                debug!(windows_count = windows.len(), "windows changed");
+                for w in windows {
+                    let niqol_window = from_niri_window(w);
+                    self.window_service.insert_window(niqol_window).await;
+                }
+            }
             _ => {
                 trace!(?event, "ignoring niri event");
             }

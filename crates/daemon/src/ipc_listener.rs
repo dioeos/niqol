@@ -1,12 +1,12 @@
 use anyhow::{Context, bail};
-use niqol_core::{ActionRequest, QueryResponse};
-use niqol_ipc::{IpcSocket, request::IpcRequest};
+use niqol_core::{ActionRequest, ActionResponse, QueryResponse};
+use niqol_ipc::{IpcSocket, protocol, request::IpcRequest};
 use tokio::{
-    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    io::{AsyncBufReadExt, BufReader},
     net::UnixStream,
     sync::mpsc::Sender,
 };
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::handlers::QueryHandler;
 
@@ -49,14 +49,17 @@ impl IpcListener {
                         .send(action_req)
                         .await
                         .context("Failed to emit action request to daemon")?;
+                    let json = serde_json::to_string(&ActionResponse::Success)?;
+                    protocol::write_to_ipc_socket(reader.get_mut(), &json).await?;
+                    debug!("action ack");
                 }
                 IpcRequest::Query(query_req) => {
                     let query_response: QueryResponse =
                         self.query_handler.handle_query_request(query_req).await?;
 
-                    let mut json = serde_json::to_string(&query_response)?;
-                    json.push('\n');
-                    reader.get_mut().write_all(json.as_bytes()).await?;
+                    let json = serde_json::to_string(&query_response)?;
+                    protocol::write_to_ipc_socket(reader.get_mut(), &json).await?;
+                    debug!("query handled");
                 }
             }
         }

@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
-use crate::{WindowId, WindowManager, models::Mark, stores::MarkStore};
+use crate::{WindowId, WindowManager, stores::MarkStore};
 
 pub struct MarkService {
     mark_store: Arc<MarkStore>,

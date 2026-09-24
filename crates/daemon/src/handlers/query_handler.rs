@@ -2,24 +2,26 @@ use std::sync::Arc;
 
 use niqol_core::{Mark, MarkService, QueryRequest, QueryResponse, WindowId, WindowService};
 
-
 pub(crate) struct QueryHandler {
     mark_service: Arc<MarkService>,
-    window_service: Arc<WindowService>
+    window_service: Arc<WindowService>,
 }
 
 impl QueryHandler {
     pub(crate) fn new(mark_service: Arc<MarkService>, window_service: Arc<WindowService>) -> Self {
-        Self { 
-            mark_service, 
-            window_service
+        Self {
+            mark_service,
+            window_service,
         }
     }
 
-    pub(crate) async fn handle_query_request(&self, request: QueryRequest) -> anyhow::Result<QueryResponse> {
+    pub(crate) async fn handle_query_request(
+        &self,
+        request: QueryRequest,
+    ) -> anyhow::Result<QueryResponse> {
         match request {
             QueryRequest::ListMarks => {
-                let slot_to_window_id: Vec<(usize, WindowId)> = 
+                let slot_to_window_id: Vec<(usize, WindowId)> =
                     self.mark_service.list_marks().await;
 
                 let mut marks: Vec<Mark> = Vec::with_capacity(slot_to_window_id.len());

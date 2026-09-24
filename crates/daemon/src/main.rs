@@ -1,6 +1,6 @@
-use niqol_core::{ActionRequest, MarkService, QueryRequest, WindowManager, WindowService};
-use niqol_niri::{NiriConnector, NiriEvent, NiriListener, NiriWindowManager};
+use niqol_core::{ActionRequest, MarkService, WindowManager, WindowService};
 use niqol_ipc::IpcSocket;
+use niqol_niri::{NiriConnector, NiriEvent, NiriListener, NiriWindowManager};
 use std::{env::var_os, path::PathBuf, sync::Arc};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::debug;
@@ -11,9 +11,7 @@ mod ipc_listener;
 
 use anyhow::Context;
 
-use crate::{
-    handlers::{ActionHandler, EventHandler, QueryHandler},
-};
+use crate::handlers::{ActionHandler, EventHandler, QueryHandler};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -44,10 +42,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     //mark service required in niri listener to listen to events
     //and update marks say if windows close (remove marks)
-    let event_handler = EventHandler::new(
-        Arc::clone(&mark_service),
-        Arc::clone(&window_service)
-    );
+    let event_handler = EventHandler::new(Arc::clone(&mark_service), Arc::clone(&window_service));
 
     //mark service also required in action listener to handle events
     //such as marking windows and fetching window information and focusing marks
@@ -69,21 +64,13 @@ async fn main() -> Result<(), anyhow::Error> {
     let (action_tx, mut action_rx): (Sender<ActionRequest>, Receiver<ActionRequest>) =
         mpsc::channel(32);
 
-    let (query_tx, mut query_rx): (Sender<QueryRequest>, Receiver<QueryRequest>) =
-        mpsc::channel(32);
-
-
     let action_handler = ActionHandler::new(Arc::clone(&mark_service));
     let query_handler = QueryHandler::new(mark_service, window_service);
 
-    let ipc_listener = ipc_listener::IpcListener::new(
-        niqol_ipc_socket,
-        action_tx,
-        query_handler
-    );
+    let ipc_listener = ipc_listener::IpcListener::new(niqol_ipc_socket, action_tx, query_handler);
 
     tokio::try_join!(
-        niri_listener.run(),   //listen to EventStream
+        niri_listener.run(), //listen to EventStream
         ipc_listener.run(),
         async move {
             while let Some(niri_event) = niri_rx.recv().await {

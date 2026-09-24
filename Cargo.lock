@@ -2511,6 +2511,7 @@ dependencies = [
  "clap",
  "dotenvy",
  "niqol-core",
+ "niqol-ipc",
  "niri-ipc",
  "serde",
  "serde_json",
@@ -2581,8 +2582,16 @@ dependencies = [
 name = "niqol-ui"
 version = "0.1.0"
 dependencies = [
+ "dotenvy",
+ "niqol-core",
+ "niqol-ipc",
+ "serde",
+ "serde_json",
  "slint",
  "slint-build",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

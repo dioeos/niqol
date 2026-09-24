@@ -8,7 +8,8 @@ pub enum QueryRequest {
     ListMarks,
 }
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
+#[serde(tag = "type", content = "data", rename_all = "snake_case")]
 pub enum QueryResponse {
-    Marks(Vec<Mark>)
+    Marks(Vec<Mark>),
 }
