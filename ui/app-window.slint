@@ -1,13 +1,22 @@
 import { VerticalBox } from "std-widgets.slint";
 import { SearchInput } from "widgets/search_input.slint";
+import { SearchResultMenu } from "widgets/search_result_menu.slint";
+import { MarkRowItem } from "./structs/mark_row_item.slint";
 
 export component AppWindow inherits Window {
     width: 500px;
+    height: 50px + root.marks.length * 36px;
     no-frame: true;
     callback search-requested <=> search.search-changed;
+
+    in property <[MarkRowItem]> marks;
 
     VerticalBox {
       padding: 5px;
       search := SearchInput {}
+      results := SearchResultMenu {
+        height: root.marks.length * 36px;
+        marks: root.marks;
+      }
     }
 }
