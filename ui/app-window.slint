@@ -1,18 +1,13 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { VerticalBox } from "std-widgets.slint";
+import { SearchInput } from "widgets/search_input.slint";
 
 export component AppWindow inherits Window {
-    in-out property <int> counter: 42;
-    callback request-increase-value();
-    VerticalBox {
-        Text {
-            text: "Counter: \{root.counter}";
-        }
+    width: 500px;
+    no-frame: true;
+    callback search-requested <=> search.search-changed;
 
-        Button {
-            text: "Increase value";
-            clicked => {
-                root.request-increase-value();
-            }
-        }
+    VerticalBox {
+      padding: 5px;
+      search := SearchInput {}
     }
 }

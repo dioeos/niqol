@@ -1,7 +1,9 @@
+#![allow(dead_code)]
 use std::{env::var_os, ffi::OsString, path::PathBuf};
 
 use anyhow::Context;
 use niqol_core::ActionRequest;
+use niqol_ipc::protocol;
 use tokio::{
     io::{AsyncWriteExt, BufWriter},
     net::UnixStream,
@@ -9,9 +11,10 @@ use tokio::{
 use tracing::debug;
 
 pub async fn dispatch_action(action: ActionRequest) -> Result<(), anyhow::Error> {
-    let actions_stream = connect_actions_socket().await?;
+    let mut ipc_stream = protocol::connect_to_ipc_socket().await?;
 
-    write_payload_to_actions_socket(actions_stream, &action).await?;
+    let json = serde_json::to_string(&action)?;
+    protocol::write_to_ipc_socket(&mut ipc_stream, &json).await?;
 
     debug!(?action, "dispatched action");
 

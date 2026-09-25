@@ -16,6 +16,16 @@ impl MarkStore {
         }
     }
 
+    pub(crate) async fn all_marks(&self) -> Vec<(usize, WindowId)> {
+        self.marks
+            .read()
+            .await
+            .iter()
+            .enumerate()
+            .filter_map(|(slot, id)| id.as_ref().map(|id| (slot, *id)))
+            .collect()
+    }
+
     pub(crate) async fn insert_mark(&self, slot: u8, id: WindowId) {
         let index = usize::from(slot - 1);
         let mut rw_guard = self.marks.write().await;

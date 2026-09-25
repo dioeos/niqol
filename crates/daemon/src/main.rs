@@ -1,21 +1,17 @@
-use niqol_core::{ActionRequest, MarkService, WindowManager};
+use niqol_core::{ActionRequest, MarkService, WindowManager, WindowService};
+use niqol_ipc::IpcSocket;
 use niqol_niri::{NiriConnector, NiriEvent, NiriListener, NiriWindowManager};
 use std::{env::var_os, path::PathBuf, sync::Arc};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tracing::debug;
 use tracing_subscriber::{EnvFilter, fmt};
 
-mod action_socket;
 mod handlers;
-mod listeners;
+mod ipc_listener;
 
 use anyhow::Context;
 
-use crate::{
-    action_socket::ActionSocket,
-    handlers::{ActionHandler, EventHandler},
-    listeners::ActionListener,
-};
+use crate::handlers::{ActionHandler, EventHandler, QueryHandler};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -42,10 +38,11 @@ async fn main() -> Result<(), anyhow::Error> {
 
     //mark service should need niri_wm
     let mark_service = Arc::new(MarkService::new(niri_wm));
+    let window_service = Arc::new(WindowService::new());
 
     //mark service required in niri listener to listen to events
     //and update marks say if windows close (remove marks)
-    let event_handler = EventHandler::new(Arc::clone(&mark_service));
+    let event_handler = EventHandler::new(Arc::clone(&mark_service), Arc::clone(&window_service));
 
     //mark service also required in action listener to handle events
     //such as marking windows and fetching window information and focusing marks
@@ -59,23 +56,22 @@ async fn main() -> Result<(), anyhow::Error> {
     let xdg_os_string =
         var_os("XDG_RUNTIME_DIR").context("XDG_RUNTIME_DIR environment variable is not set")?;
 
-    let mut action_socket_path = PathBuf::from(xdg_os_string);
-    action_socket_path.push("niqol-actions.sock");
+    let mut niqol_ipc_path = PathBuf::from(xdg_os_string);
+    niqol_ipc_path.push("niqol-ipc.sock");
 
-    let action_socket = ActionSocket::bind(action_socket_path)?;
+    let niqol_ipc_socket = IpcSocket::bind(niqol_ipc_path)?;
 
     let (action_tx, mut action_rx): (Sender<ActionRequest>, Receiver<ActionRequest>) =
         mpsc::channel(32);
 
-    //action listener operates on a request/reply connection via niri_wm
-    //does not need its own connector
-    let action_listener = ActionListener::new(action_socket, action_tx);
+    let action_handler = ActionHandler::new(Arc::clone(&mark_service));
+    let query_handler = QueryHandler::new(mark_service, window_service);
 
-    let action_handler = ActionHandler::new(mark_service);
+    let ipc_listener = ipc_listener::IpcListener::new(niqol_ipc_socket, action_tx, query_handler);
 
     tokio::try_join!(
-        niri_listener.run(),   //listen to EventStream
-        action_listener.run(), //listen to one-off requests via cli
+        niri_listener.run(), //listen to EventStream
+        ipc_listener.run(),
         async move {
             while let Some(niri_event) = niri_rx.recv().await {
                 debug!("Handling niri event");
@@ -89,7 +85,7 @@ async fn main() -> Result<(), anyhow::Error> {
                 action_handler.handle_action_request(action_request).await?;
             }
             Ok::<_, anyhow::Error>(())
-        }
+        },
     )?;
     Ok(())
 }

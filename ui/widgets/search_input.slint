@@ -1,0 +1,21 @@
+
+import { LineEdit } from "std-widgets.slint";
+
+export component SearchInput {
+  in-out property <string> text <=> text-input.text;
+  callback search-changed(string);
+
+  text_input := LineEdit {
+    width: parent.width;
+    height: 40px;
+    placeholder-text: "Search...";
+
+    edited(value) => {
+      root.search-changed(value)
+    }
+  }
+
+  init => {
+    text_input.focus();
+  }
+}

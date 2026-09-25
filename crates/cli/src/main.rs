@@ -1,3 +1,4 @@
+use niqol_ipc::client::IpcClient;
 use tracing_subscriber::{EnvFilter, fmt};
 
 mod action;
@@ -19,7 +20,9 @@ async fn main() -> Result<(), anyhow::Error> {
         .init();
 
     let args = NiqolActions::parse_from(get_args());
-    dispatcher::dispatch_action(args.action_request).await?;
+
+    let ipc_client = IpcClient::connect().await?;
+    ipc_client.request_action(args.action_request).await?;
 
     Ok(())
 }
