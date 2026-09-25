@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-    A growing collection of tools to make navigating, organizing, and interacing with niri faster and more effortless
+    A growing collection of tools to make navigating, organizing, and interacting with Niri faster and more effortless
 </p>
 
 <p align="center">
