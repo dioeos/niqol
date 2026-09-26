@@ -5,6 +5,11 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ActionRequest {
     MarkWindow { slot: u8 },
+    MarkRequestedWindow {
+        slot: u8,
+        #[arg(long)]
+        id: u64
+    },
     FocusMark { slot: u8 },
     NextMark,
     PrevMark,
