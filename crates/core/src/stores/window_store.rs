@@ -15,9 +15,9 @@ impl WindowStore {
         }
     }
 
-    pub(crate) async fn insert_window(&self, window_id: WindowId, window: Window) {
+    pub(crate) async fn upsert_window(&self, window_id: WindowId, window: Window) {
         let mut rw_guard = self.windows.write().await;
-        rw_guard.entry(window_id).or_insert(window);
+        rw_guard.insert(window_id, window);
     }
 
     pub(crate) async fn remove_window(&self, window_id: WindowId) {

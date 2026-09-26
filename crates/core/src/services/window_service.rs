@@ -12,13 +12,13 @@ impl WindowService {
             window_store: WindowStore::new(),
         }
     }
-    pub async fn insert_window(&self, window: Window) {
+    pub async fn upsert_window(&self, window: Window) {
         debug!(
             window_id = ?window.id,
             window = ?window,
             "inserting window"
         );
-        self.window_store.insert_window(window.id, window).await;
+        self.window_store.upsert_window(window.id, window).await;
     }
 
     pub async fn remove_window(&self, window_id: WindowId) {

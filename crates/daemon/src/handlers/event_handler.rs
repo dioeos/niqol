@@ -26,7 +26,7 @@ impl EventHandler {
             NiriEvent::WindowOpenedOrChanged { window } => {
                 debug!(window = ?window, "window opened or changed");
                 let niqol_window = from_niri_window(window);
-                self.window_service.insert_window(niqol_window).await;
+                self.window_service.upsert_window(niqol_window).await;
             }
             NiriEvent::WindowClosed { id } => {
                 debug!(window_id = id, "window closed");
@@ -36,7 +36,7 @@ impl EventHandler {
                 debug!(windows_count = windows.len(), "windows changed");
                 for w in windows {
                     let niqol_window = from_niri_window(w);
-                    self.window_service.insert_window(niqol_window).await;
+                    self.window_service.upsert_window(niqol_window).await;
                 }
             }
             _ => {
