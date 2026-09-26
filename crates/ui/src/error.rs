@@ -15,22 +15,18 @@ pub enum Error {
 impl From<niqol_ipc::error::Error> for Error {
     fn from(value: IpcError) -> Self {
         match value {
-            source @ (
-                IpcError::FailedSocketIO(_)
-                | IpcError::EmptyIpcResponse(_)
-                | IpcError::FailedIpcSerdeOperation(_)
-            ) => Self::FailedIpcOperation(source),
+            source @ (IpcError::FailedSocketIO(_)
+            | IpcError::EmptyIpcResponse(_)
+            | IpcError::FailedIpcSerdeOperation(_)) => Self::FailedIpcOperation(source),
 
-            source @ (
-                IpcError::FailedToBindListenerToSocket(_)
-                | IpcError::FailedToConnectToIpcSocket(_)
-                | IpcError::FailedToFindXdgRuntimeDirVar
-            ) => Self::FailedIpcClientConnect(source),
+            source @ (IpcError::FailedToBindListenerToSocket(_)
+            | IpcError::FailedToConnectToIpcSocket(_)
+            | IpcError::FailedToFindXdgRuntimeDirVar) => Self::FailedIpcClientConnect(source),
 
-            source @ (
-                IpcError::UnexpectedQueryResponse
-                | IpcError::FailedToAcceptConnection(_)
-            ) => Self::UnexpectedSocketConflict(source)
+            source
+            @ (IpcError::UnexpectedQueryResponse | IpcError::FailedToAcceptConnection(_)) => {
+                Self::UnexpectedSocketConflict(source)
+            }
         }
     }
 }

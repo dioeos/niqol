@@ -32,12 +32,9 @@ impl IpcClient {
     }
 
     pub async fn list_marks(&self) -> Result<Vec<Mark>, Error> {
-        match self
-            .request_query(QueryRequest::ListMarks)
-            .await?
-        {
+        match self.request_query(QueryRequest::ListMarks).await? {
             QueryResponse::Marks(marks) => Ok(marks),
-            _ => Err(Error::UnexpectedQueryResponse),
+            // _ => Err(Error::UnexpectedQueryResponse),
         }
     }
 

@@ -1,8 +1,11 @@
 mod error;
 
-use std::{rc::Rc, sync::{Arc, Mutex}};
+use std::{
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
-use niqol_core::{Mark};
+use niqol_core::Mark;
 use niqol_ipc::client::IpcClient;
 use slint::{Model, SharedString, VecModel};
 use tokio::{runtime, sync::OnceCell};
@@ -40,7 +43,7 @@ fn main() -> Result<(), slint::PlatformError> {
 
     //@NOTE: Arc<Mutex<T>> is preferred over `Rc` due to `marks_state` being captured by a closure
     //       passed to `slint_invoke_from_event_loop` from a `tokio::spawn` task. `Rc` does not have
-    //       `Send`, making it incorrect choice to wrap the state. The `all_marks_state` role is to 
+    //       `Send`, making it incorrect choice to wrap the state. The `all_marks_state` role is to
     //       share state between the tokio background worker thread and the main Slint event thread.
     let all_marks_state = Arc::new(Mutex::new(Vec::<MarkRowItem>::new()));
     let all_marks_state_for_initial_load = Arc::clone(&all_marks_state);
@@ -84,9 +87,7 @@ fn main() -> Result<(), slint::PlatformError> {
             .lock()
             .unwrap()
             .iter()
-            .filter(|row| {
-                row.title.to_lowercase().contains(&query)
-            })
+            .filter(|row| row.title.to_lowercase().contains(&query))
             .cloned()
             .collect::<Vec<MarkRowItem>>();
 
