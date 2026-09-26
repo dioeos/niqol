@@ -32,21 +32,13 @@ impl MarkService {
 
         self.mark_store.insert_mark(slot, focused_window.id).await;
         self.set_last_focused_slot(usize::from(slot - 1));
-        debug!(
-            window_id = window_id.0,
-            mark = slot,
-            "mark focused window"
-        );
+        debug!(window_id = window_id.0, mark = slot, "mark focused window");
         Ok(())
     }
 
     pub async fn mark_window(&self, slot: u8, window_id: WindowId) -> anyhow::Result<()> {
         self.mark_store.insert_mark(slot, window_id).await;
-        debug!(
-            window_id = window_id.0,
-            mark = slot,
-            "mark window"
-        );
+        debug!(window_id = window_id.0, mark = slot, "mark window");
         Ok(())
     }
 

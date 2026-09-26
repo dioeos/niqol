@@ -1,6 +1,6 @@
 use std::{env::var_os, ffi::OsString, path::PathBuf};
 
-use niqol_core::{ActionRequest, ActionResponse, QueryRequest, QueryResponse};
+use niqol_core::{ActionRequest, ActionResponse, Mark, QueryRequest, QueryResponse};
 use serde::{Serialize, de::DeserializeOwned};
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
@@ -31,7 +31,14 @@ impl IpcClient {
         })
     }
 
-    pub async fn request_query(&self, query_request: QueryRequest) -> Result<QueryResponse, Error> {
+    pub async fn list_marks(&self) -> Result<Vec<Mark>, Error> {
+        match self.request_query(QueryRequest::ListMarks).await? {
+            QueryResponse::Marks(marks) => Ok(marks),
+            // _ => Err(Error::UnexpectedQueryResponse),
+        }
+    }
+
+    async fn request_query(&self, query_request: QueryRequest) -> Result<QueryResponse, Error> {
         let response = self
             .request::<IpcRequest, QueryResponse>(IpcRequest::Query(query_request))
             .await?;

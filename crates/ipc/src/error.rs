@@ -9,6 +9,9 @@ pub enum Error {
     EmptyIpcResponse(#[source] io::Error),
 
     #[error("{self:?}")]
+    UnexpectedQueryResponse,
+
+    #[error("{self:?}")]
     FailedToBindListenerToSocket(#[source] io::Error),
 
     #[error("{self:?}")]
