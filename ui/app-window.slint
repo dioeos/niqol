@@ -4,12 +4,11 @@ import { SearchResultMenu } from "widgets/search_result_menu.slint";
 import { MarkRowItem } from "./structs/mark_row_item.slint";
 
 export component AppWindow inherits Window {
+    in property <[MarkRowItem]> marks;
+
     width: 500px;
-    height: 50px + root.marks.length * 36px;
     no-frame: true;
     callback search-requested <=> search.search-changed;
-
-    in property <[MarkRowItem]> marks;
 
     VerticalBox {
       padding: 5px;
