@@ -10,7 +10,14 @@ export component MarkResultRow {
     padding: 6px;
     spacing: 8px;
 
-    Text { text: root.mark.slot; }
-    Text { text: root.mark.title; horizontal-stretch: 1; }
+    Text { 
+      text: root.mark.slot; 
+    }
+    Text { 
+      text: root.mark.title; 
+      horizontal-stretch: 1; 
+      overflow: elide;
+      wrap: no-wrap;
+    }
   }
 }
