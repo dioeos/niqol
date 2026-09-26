@@ -31,12 +31,35 @@ fn main() -> Result<(), slint::PlatformError> {
     info!("entered tokio rutime");
 
     let ui = AppWindow::new()?;
-    let weak = ui.as_weak();
+    let weak_ui = ui.as_weak();
 
     tokio::spawn(async {
         match list_marks().await {
-            Ok(QueryResponse::Marks(marks)) => debug!("Loaded {} marks", marks.len()),
-            Err(err) => error!("Failed to load marks: {err}"),
+            Ok(QueryResponse::Marks(marks)) => {
+                debug!("Loaded {} marks", marks.len());
+
+                if let Err(err) = slint::invoke_from_event_loop(move || {
+                    if let Some(ui) = weak_ui.upgrade() {
+                        let rows: Vec<MarkRowItem> = marks
+                            .into_iter()
+                            .map(|mark| MarkRowItem {
+                                slot: mark.slot.to_string().into(),
+                                title: mark
+                                    .window
+                                    .title
+                                    .or(mark.window.app_id)
+                                    .unwrap_or_else(|| "Untitled".to_owned())
+                                    .into(),
+                            })
+                            .collect();
+                        ui.set_marks(slint::ModelRc::new(slint::VecModel::from(rows)));
+                        debug!("set marks");
+                    }
+                }) {
+                    error!("failed to update marks UI: {err}");
+                }
+            }
+            Err(err) => error!("failed to load marks: {err}"),
         }
     });
 
@@ -53,6 +76,5 @@ async fn use_ipc_client() -> Arc<IpcClient> {
 async fn list_marks() -> Result<QueryResponse, niqol_ipc::error::Error> {
     let client = use_ipc_client().await;
     let query_response = client.request_query(QueryRequest::ListMarks).await?;
-    debug!("Got marks");
     Ok(query_response)
 }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use niqol_core::{ActionRequest, MarkService};
+use niqol_core::{ActionRequest, MarkService, WindowId};
 use tracing::debug;
 
 pub(crate) struct ActionHandler {
@@ -16,6 +16,9 @@ impl ActionHandler {
         match request {
             ActionRequest::MarkWindow { slot } => {
                 self.mark_service.mark_focused_window(slot).await?;
+            }
+            ActionRequest::MarkRequestedWindow { slot, id } => {
+                self.mark_service.mark_window(slot, WindowId(id)).await?;
             }
             ActionRequest::FocusMark { slot } => {
                 self.mark_service.focus_marked_window(slot).await?;

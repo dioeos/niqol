@@ -1,0 +1,12 @@
+
+import { MarkRowItem } from "../structs/mark_row_item.slint";
+  import { MarkResultRow } from "./mark_result_row.slint";
+
+export component SearchResultMenu {
+  in property <[MarkRowItem]> marks;
+
+  VerticalLayout {
+    for mark in root.marks : MarkResultRow { mark: mark; }
+  }
+}
+

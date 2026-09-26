@@ -11,3 +11,4 @@ pub struct Window {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct WindowId(pub u64);
+

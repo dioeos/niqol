@@ -1,0 +1,23 @@
+import { MarkRowItem } from "../structs/mark_row_item.slint";
+
+export component MarkResultRow {
+  in property <MarkRowItem> mark;
+  callback activated();
+
+  height: 36px;
+
+  HorizontalLayout {
+    padding: 6px;
+    spacing: 8px;
+
+    Text { 
+      text: root.mark.slot; 
+    }
+    Text { 
+      text: root.mark.title; 
+      horizontal-stretch: 1; 
+      overflow: elide;
+      wrap: no-wrap;
+    }
+  }
+}

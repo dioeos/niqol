@@ -22,7 +22,7 @@ impl MarkStore {
             .await
             .iter()
             .enumerate()
-            .filter_map(|(slot, id)| id.as_ref().map(|id| (slot, *id)))
+            .filter_map(|(slot, id)| id.as_ref().map(|id| (slot + 1, *id)))
             .collect()
     }
 
